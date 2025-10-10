@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Video Platform - Home</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+    <style>
+        /* Base and Utility Styles - Dark Theme */
+        :root {
+            --primary-color: #e50914;
+            --secondary-color: #00bcd4;
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-color: #ffffff;
+            --text-muted: #b0b0b0;
+            --shadow-light: 0 4px 12px rgba(0, 0, 0, 0.5);
+            --shadow-dark: 0 8px 25px rgba(0, 0, 0, 0.8);
+            /* New Shadow Variable for Slider */
+            --slider-shadow: 0 10px 30px rgba(0, 0, 0, 0.9), 0 0 10px rgba(229, 9, 20, 0.5); 
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            touch-action: pan-y;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        a {
+            text-decoration: none;
+            color: var(--text-color);
+        }
+
+        /* Header Styles */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            background-color: var(--card-bg);
+            box-shadow: var(--shadow-dark);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .logo a {
+            /* লোগো ইমেজের জন্য এই অংশটি প্রস্তুত করা হলো */
+            display: block; 
+        }
+        
+        /* লোগো Placeholder */
+        .logo-placeholder {
+            font-size: 26px;
+            font-weight: 900;
+            color: var(--primary-color);
+            letter-spacing: -0.5px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+        }
+        /* লোগো ব্যবহারের জন্য: <a href="index.html"><img src="your-logo-link.png" alt="Logo" style="height: 30px;"></a> */
+
+
+        /* Search Styles */
+        .search-container {
+            position: relative;
+            flex-grow: 1;
+            margin: 0 10px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 25px;
+            background-color: #333;
+            color: var(--text-color);
+            outline: none;
+            transition: background-color 0.2s, box-shadow 0.2s;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4);
+        }
+
+        .search-input:focus {
+             background-color: #444;
+             box-shadow: 0 0 0 2px var(--secondary-color);
+        }
+
+        .search-suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            box-shadow: var(--shadow-dark);
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 500;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .suggestion-item {
+            padding: 12px 15px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            border-bottom: 1px solid #333;
+            font-size: 14px;
+        }
+
+        .suggestion-item:last-child {
+            border-bottom: none;
+        }
+
+        .suggestion-item:hover {
+            background-color: #333;
+            color: var(--secondary-color);
+        }
+
+        /* Slider Styles */
+        .slider-container {
+            width: 100%;
+            overflow: hidden;
+            position: relative;
+            /* 16:9 Aspect Ratio */
+            padding-top: 56.25%; 
+            margin-bottom: 30px;
+            /* Updated: Added beautiful shadow */
+            box-shadow: var(--slider-shadow); 
+            border-radius: 10px;
+            transform: translate3d(0,0,0); /* For smooth hardware acceleration */
+        }
+
+        .slider {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            /* Updated: Added a class for temporary transition removal during manual slide */
+            transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            will-change: transform;
+            cursor: grab; /* Added grab cursor */
+        }
+        
+        /* New: Class to temporarily disable transition for smooth manual dragging */
+        .slider.no-transition {
+            transition: none !important;
+        }
+
+
+        .slide {
+            min-width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            position: relative;
+            transition: opacity 0.3s;
+        }
+
+        .slide:active {
+            opacity: 0.8;
+        }
+
+        .slider-dots {
+            position: absolute;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            z-index: 10;
+        }
+
+        .dot {
+            height: 10px;
+            width: 10px;
+            margin: 0 6px;
+            background-color: var(--text-muted);
+            border-radius: 50%;
+            display: inline-block;
+            transition: background-color 0.3s, transform 0.3s;
+            cursor: pointer;
+            opacity: 0.7;
+        }
+
+        .dot.active {
+            background-color: var(--primary-color);
+            opacity: 1;
+            transform: scale(1.2);
+        }
+
+        /* Video Grid Styles */
+        .content-section {
+            padding: 0 15px 80px;
+        }
+
+        h2 {
+            margin: 25px 0 15px;
+            font-size: 1.6em;
+            color: var(--text-color);
+            border-left: 4px solid var(--primary-color);
+            padding-left: 10px;
+            display: flex;
+            align-items: center;
+        }
+
+        .video-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px; /* Space after each category grid */
+        }
+
+        .video-card {
+            background-color: var(--card-bg);
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: var(--shadow-light);
+            transition: transform 0.3s ease-in-out, box-shadow 0.3s;
+            cursor: pointer;
+        }
+
+        .video-card:hover {
+            transform: translateY(-8px) scale(1.03);
+            box-shadow: var(--shadow-dark);
+        }
+
+        .video-card:active {
+            transform: translateY(0) scale(0.98);
+        }
+
+        .video-thumbnail-container {
+            width: 100%;
+            padding-top: 56.25%;
+            position: relative;
+        }
+
+        .video-thumbnail {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-bottom: 2px solid var(--primary-color);
+        }
+
+        .video-info {
+            padding: 10px;
+        }
+
+        .video-title {
+            font-size: 0.9em;
+            font-weight: 700;
+            margin: 0 0 5px;
+            height: 2.2em;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+
+        .video-description {
+            font-size: 0.75em;
+            color: var(--text-muted);
+            margin: 0;
+            height: 2.25em;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        /* Footer Styles */
+        .footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-around;
+            background-color: var(--card-bg);
+            box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            padding: 8px 0;
+            border-top: 1px solid #333;
+        }
+
+        .footer-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 5px;
+            color: var(--text-muted);
+            transition: color 0.3s, transform 0.2s;
+        }
+
+        .footer-item.active {
+            color: var(--primary-color);
+        }
+
+        .footer-item:active {
+            transform: scale(0.9);
+        }
+
+        .footer-item svg {
+            width: 24px;
+            height: 24px;
+            margin-bottom: 2px;
+            fill: currentColor;
+        }
+
+        .footer-item span {
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        /* Responsive Adjustments */
+        @media (min-width: 600px) {
+            .video-grid {
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .video-grid {
+                grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            }
+            .content-section {
+                max-width: 1300px;
+                margin: 0 auto;
+                padding: 0 30px 20px;
+            }
+            .footer {
+                display: none;
+            }
+            .header {
+                position: static;
+                padding: 15px 30px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="logo">
+            <a href="index.html">
+                <span class="logo-placeholder">OnFlix</span>
+                </a>
+        </div>
+        <div class="search-container">
+            <input type="text" id="searchInput" class="search-input" placeholder="ভিডিও বা সিনেমার নাম দিয়ে খুঁজুন..." oninput="handleSearchInput()">
+            <div id="searchResults" class="search-suggestions">
+                </div>
+        </div>
+    </div>
+
+    <div class="content-section">
+        
+        <div class="slider-container">
+            <div class="slider" id="slider">
+                <p style="padding:20px; color:var(--text-muted);">Loading...</p>
+            </div>
+            <div class="slider-dots" id="sliderDots">
+                </div>
+        </div>
+        
+    </div>
+    
+    <div class="footer">
+        <a href="index.html" class="footer-item active">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3l-8 7v10h16V10l-8-7zm-2 16h-2v-6h-2v6H6v-7.8l6-4.9 6 4.9V19h-2v-6h-2v6h-2z"/></svg>
+            <span>হোম</span>
+        </a>
+        <a href="movie.html" class="footer-item">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 3v2h-2V3H8v2H6V3H4v18h2v-2h2v2h8v-2h2v2h2V3h-2zM8 17H6v-2h2v2zm0-4H6v-2h2v2zm0-4H6V7h2v2zm10 8h-2v-2h2v2zm0-4h-2v-2h2v2zm0-4h-2V7h2v2z"/></svg>
+            <span>সিনেমা</span>
+        </a>
+        <a href="drama.html" class="footer-item">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-4.75-9.25c.69 0 1.25-.56 1.25-1.25s-.56-1.25-1.25-1.25-1.25.56-1.25 1.25.56 1.25 1.25 1.25zm9.5 0c.69 0 1.25-.56 1.25-1.25s-.56-1.25-1.25-1.25-1.25.56-1.25 1.25.56 1.25 1.25 1.25zM12 17.5c-2.33 0-4.2-1.38-5.3-3.33.67-.34 1.45-.55 2.3-.55h6.01c.85 0 1.63.21 2.3.55-1.02 1.95-3.01 3.33-5.31 3.33z"/></svg>
+            <span>নাটক</span>
+        </a>
+        <a href="webseries.html" class="footer-item">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 3H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h4l-1.5 2.36L8 21h8l1.5-1.64L16 19h4c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 14H4V5h16v12zM6 8h2v6H6V8zm3 0h2v6H9V8zm3 0h2v6h-2V8z"/></svg>
+            <span>ওয়েব সিরিজ</span>
+        </a>
+    </div>
+
+    <script>
+        // --- Firebase Configuration & Setup ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyBakmRixYRaHzuaR-pAUHkOJUlDG9qflJA",
+            authDomain: "ad420-1780f.firebaseapp.com",
+            databaseURL: "https://ad420-1780f-default-rtdb.firebaseio.com",
+            projectId: "ad420-1780f",
+            storageBucket: "ad420-1780f.firebasestorage.app",
+            messagingSenderId: "479314410995",
+            appId: "1:479314410995:web:6f7a99e1be874d69fd2686"
+        };
+        const app = firebase.initializeApp(firebaseConfig);
+        const database = app.database();
+        const videosRef = database.ref('videos');
+        const slidersRef = database.ref('sliders');
+
+        // --- Video Player Redirection Logic ---
+        function playVideo(videoKey) {
+            window.location.href = `player.html?key=${videoKey}`;
+        }
+        
+        function navigateToSliderLink(clickURL) {
+             if (clickURL) {
+                 window.location.href = clickURL;
+             }
+        }
+
+        // --- Data Fetching, Rendering, and Slider Logic (UPDATED) ---
+        let allVideos = [];
+
+        function createVideoCard(video) {
+            const card = document.createElement('div');
+            card.className = 'video-card';
+            card.onclick = () => playVideo(video.key);
+
+            card.innerHTML = `
+                <div class="video-thumbnail-container">
+                    <img src="${video.thumbnailURL}" alt="${video.title}" class="video-thumbnail" onerror="this.onerror=null;this.src='https://via.placeholder.com/160x90.png?text=No+Image';">
+                </div>
+                <div class="video-info">
+                    <h3 class="video-title">${video.title}</h3>
+                    <p class="video-description">${video.description}</p>
+                </div>
+            `;
+            return card;
+        }
+
+        // Slider Logic
+        const slider = document.getElementById('slider');
+        const sliderDotsContainer = document.getElementById('sliderDots');
+        let currentSlide = 0;
+        let slideInterval;
+        let slides = [];
+        // Manual Slide Variables
+        let isDragging = false;
+        let startPos = 0;
+        let currentTranslate = 0;
+        let prevTranslate = 0;
+        let animationID = 0;
+        const SLIDE_THRESHOLD = 0.15; // 15% of screen width to register a slide
+
+        function setSliderPosition() {
+             slider.style.transform = `translateX(${currentTranslate}px)`;
+        }
+
+        function updateSlider() {
+            if (slides.length === 0) return;
+            const translateValue = -currentSlide * slider.clientWidth;
+            
+            // Set currentTranslate to the target position for auto/dot clicks
+            currentTranslate = translateValue;
+            
+            slider.classList.remove('no-transition');
+            setSliderPosition();
+
+            Array.from(sliderDotsContainer.children).forEach((dot, index) => {
+                dot.classList.remove('active');
+                if (index === currentSlide) {
+                    dot.classList.add('active');
+                }
+            });
+        }
+
+        function nextSlide() {
+            currentSlide = (currentSlide + 1) % slides.length;
+            updateSlider();
+        }
+
+        function startSlideShow() {
+            clearInterval(slideInterval);
+            if (slides.length > 1) {
+                slideInterval = setInterval(nextSlide, 5000);
+            }
+        }
+        
+        // --- Touch/Mouse Event Handlers for Manual Slide ---
+        
+        function getPositionX(event) {
+            return event.type.includes('mouse') ? event.pageX : event.touches[0].clientX;
+        }
+        
+        function dragStart(event) {
+            if (slides.length === 0) return;
+            
+            // Prevent default drag for mouse events to keep image dragging
+            if (event.type.includes('mouse')) event.preventDefault(); 
+            
+            isDragging = true;
+            startPos = getPositionX(event);
+            slider.classList.add('no-transition');
+            cancelAnimationFrame(animationID);
+            
+            // Pause auto-slide when dragging starts
+            clearInterval(slideInterval); 
+        }
+
+        function drag(event) {
+            if (!isDragging) return;
+            
+            const currentPosition = getPositionX(event);
+            const diff = currentPosition - startPos;
+            
+            // Update the slider's position immediately without CSS transition
+            currentTranslate = prevTranslate + diff;
+            setSliderPosition();
+        }
+
+        function dragEnd() {
+            if (!isDragging) return;
+            
+            isDragging = false;
+            slider.classList.remove('no-transition');
+            
+            const movedBy = currentTranslate - prevTranslate;
+            const slideWidth = slider.clientWidth;
+            
+            // Logic to determine if a full slide should happen
+            if (movedBy < -slideWidth * SLIDE_THRESHOLD && currentSlide < slides.length - 1) {
+                currentSlide++; // Swipe left, go to next slide
+            } else if (movedBy > slideWidth * SLIDE_THRESHOLD && currentSlide > 0) {
+                currentSlide--; // Swipe right, go to previous slide
+            }
+            
+            // Update to the new slide position (will use CSS transition)
+            prevTranslate = -currentSlide * slideWidth;
+            updateSlider(); 
+            
+            // Resume auto-slide
+            startSlideShow();
+        }
+
+        // Add event listeners
+        slider.addEventListener('mousedown', dragStart);
+        slider.addEventListener('mouseup', dragEnd);
+        slider.addEventListener('mouseleave', dragEnd);
+        slider.addEventListener('mousemove', drag);
+        
+        slider.addEventListener('touchstart', dragStart);
+        slider.addEventListener('touchend', dragEnd);
+        slider.addEventListener('touchmove', drag);
+
+
+        function createSlide(sliderData) {
+            const slide = document.createElement('div');
+            slide.className = 'slide';
+            slide.style.backgroundImage = `url('${sliderData.thumbnailURL}')`;
+
+            // Make sure the entire slide is a link if it's clickable
+            if (sliderData.clickable === 'true') {
+                // Ensure the click only fires if it wasn't a drag motion
+                slide.onclick = (e) => {
+                    const diff = Math.abs(currentTranslate - prevTranslate);
+                    // Only navigate if the movement was negligible (i.e., it was a click, not a drag)
+                    if (diff < 5) { 
+                        navigateToSliderLink(sliderData.clickURL);
+                    }
+                };
+                slide.style.cursor = 'pointer';
+            } else {
+                slide.style.cursor = 'default';
+                slide.onclick = null;
+            }
+            
+            return slide;
+        }
+
+        function renderSlider(featuredSliders) {
+            slides = featuredSliders;
+            slider.innerHTML = '';
+            sliderDotsContainer.innerHTML = '';
+
+            if (slides.length === 0) {
+                 slider.innerHTML = '<p style="padding:20px; color:var(--text-muted); text-align:center; width:100%;">এই মুহূর্তে কোনো স্লাইডার আপলোড করা হয়নি।</p>';
+                 return;
+            }
+
+            featuredSliders.forEach((s, index) => {
+                slider.appendChild(createSlide(s));
+
+                const dot = document.createElement('span');
+                dot.className = 'dot';
+                // Clicking dot should also restart auto-slide
+                dot.onclick = () => { 
+                    currentSlide = index; 
+                    updateSlider(); 
+                    startSlideShow(); 
+                };
+                sliderDotsContainer.appendChild(dot);
+            });
+
+            currentSlide = 0;
+            prevTranslate = 0; // Reset manual slide state
+            currentTranslate = 0; // Reset manual slide state
+            updateSlider();
+            startSlideShow();
+        }
+
+        // Section Rendering Logic
+        function createSection(title, category, videos) {
+            const sectionDiv = document.createElement('div');
+            sectionDiv.className = 'content-section-category';
+
+            const sectionHeader = document.createElement('h2');
+            const categoryLink = `${category.toLowerCase().replace(/\s/g, '')}.html`; 
+            sectionHeader.innerHTML = `${title} <a href="${categoryLink}" style="font-size: 0.6em; color: var(--secondary-color); font-weight: 500; margin-left: 10px;"> See more...</a>`;
+            
+            sectionDiv.appendChild(sectionHeader);
+
+            const grid = document.createElement('div');
+            grid.className = 'video-grid';
+            
+            const videosToShow = videos.slice(0, 20); 
+
+            if (videosToShow.length === 0) {
+                 grid.innerHTML = `<p style="text-align:center; color:var(--text-muted); grid-column: 1 / -1; margin-top: 10px;">এই সেকশনে কোনো ভিডিও পাওয়া যায়নি।</p>`;
+            } else {
+                 videosToShow.forEach(video => {
+                    grid.appendChild(createVideoCard(video));
+                });
+            }
+            
+            sectionDiv.appendChild(grid);
+            return sectionDiv;
+        }
+
+
+        // --- Search Logic ---
+        const searchInput = document.getElementById('searchInput');
+        const searchResultsContainer = document.getElementById('searchResults');
+        
+        function renderSearchResults(videos) {
+            const contentArea = document.querySelector('.content-section');
+            const sliderContainer = document.querySelector('.slider-container');
+            
+            const existingSections = contentArea.querySelectorAll('.content-section-category');
+            existingSections.forEach(section => section.remove());
+
+            let searchSection = document.getElementById('searchSection');
+            if (!searchSection) {
+                 searchSection = document.createElement('div');
+                 searchSection.id = 'searchSection';
+                 searchSection.className = 'content-section-category';
+                 sliderContainer.insertAdjacentElement('afterend', searchSection);
+            }
+            
+            searchSection.innerHTML = '<h2>অনুসন্ধানের ফলাফল</h2>';
+            
+            const grid = document.createElement('div');
+            grid.className = 'video-grid';
+            
+            if (videos.length === 0) {
+                grid.innerHTML = `<p style="text-align:center; color:var(--text-muted); grid-column: 1 / -1; margin-top: 10px;">আপনার অনুসন্ধানের সাথে মেলে এমন কোনো ভিডিও পাওয়া যায়নি।</p>`;
+            } else {
+                 videos.forEach(video => {
+                    grid.appendChild(createVideoCard(video));
+                });
+            }
+            
+            searchSection.appendChild(grid);
+        }
+
+        function handleSearchInput() {
+            const query = searchInput.value.toLowerCase().trim();
+            searchResultsContainer.innerHTML = '';
+
+            if (query.length < 2) {
+                searchResultsContainer.style.display = 'none';
+                renderAllCategories(allVideos); 
+                return;
+            }
+
+            const filteredVideos = allVideos.filter(video =>
+                video.title.toLowerCase().includes(query) || 
+                video.description.toLowerCase().includes(query)
+            );
+
+            filteredVideos.slice(0, 5).forEach(video => {
+                const item = document.createElement('div');
+                item.className = 'suggestion-item';
+                item.textContent = video.title;
+                item.onclick = () => {
+                    searchInput.value = video.title;
+                    performSearch(video.title);
+                    searchResultsContainer.style.display = 'none';
+                };
+                searchResultsContainer.appendChild(item);
+            });
+
+            searchResultsContainer.style.display = filteredVideos.length > 0 ? 'block' : 'none';
+            
+            renderSearchResults(filteredVideos);
+        }
+
+        function performSearch(query) {
+             const finalQuery = query.toLowerCase().trim();
+             const filteredVideos = allVideos.filter(video =>
+                video.title.toLowerCase().includes(finalQuery) || 
+                video.description.toLowerCase().includes(finalQuery)
+            );
+            renderSearchResults(filteredVideos);
+        }
+
+        document.addEventListener('click', (event) => {
+            if (!event.target.closest('.search-container')) {
+                searchResultsContainer.style.display = 'none';
+            }
+        });
+
+        // --- Main Rendering Function ---
+        function renderAllCategories(videos) {
+            const contentArea = document.querySelector('.content-section');
+            const sliderContainer = document.querySelector('.slider-container');
+            
+            const existingSections = contentArea.querySelectorAll('.content-section-category');
+            existingSections.forEach(section => section.remove());
+            
+            const searchSection = document.getElementById('searchSection');
+            if (searchSection) searchSection.remove();
+
+            const movieVideos = videos.filter(v => v.category === 'Movie');
+            const dramaVideos = videos.filter(v => v.category === 'Drama');
+            const webSeriesVideos = videos.filter(v => v.category === 'Web Series');
+            
+            // Insert sections in reverse order so they appear correctly after the slider
+            
+            if (movieVideos.length > 0) {
+                sliderContainer.insertAdjacentElement('afterend', createSection("Movie", "Movie", movieVideos));
+            }
+
+            if (dramaVideos.length > 0) {
+                sliderContainer.insertAdjacentElement('afterend', createSection("Drama", "Drama", dramaVideos));
+            }
+
+            if (webSeriesVideos.length > 0) {
+                sliderContainer.insertAdjacentElement('afterend', createSection("Web Series", "Web Series", webSeriesVideos));
+            }
+
+            // Fallback message
+            if (movieVideos.length === 0 && dramaVideos.length === 0 && webSeriesVideos.length === 0) {
+                 sliderContainer.insertAdjacentHTML('afterend', '<h2 style="text-align:center; color:var(--text-muted); margin-top: 30px;">কোনো ভিডিও আপলোড করা হয়নি।</h2>');
+            }
+        }
+
+
+        // --- Data Listeners ---
+
+        // 1. Video Data Listener (for grid and search)
+        videosRef.on('value', (snapshot) => {
+            const data = snapshot.val();
+            const videosArray = [];
+
+            for (let key in data) {
+                if (data.hasOwnProperty(key)) {
+                    videosArray.push({
+                        key: key,
+                        ...data[key]
+                    });
+                }
+            }
+
+            allVideos = videosArray.reverse();
+            
+            if (searchInput.value.length < 2) {
+                 renderAllCategories(allVideos);
+            }
+        }, (error) => {
+            console.error("Firebase video read failed:", error);
+            const contentArea = document.querySelector('.content-section');
+            contentArea.insertAdjacentHTML('beforeend', '<p style="text-align:center; color:var(--primary-color); padding: 30px;">ভিডিও লোড করতে সমস্যা হচ্ছে। Firebase সংযোগ পরীক্ষা করুন।</p>');
+        });
+        
+        // 2. Slider Data Listener
+        slidersRef.on('value', (snapshot) => {
+            const data = snapshot.val();
+            const slidersArray = [];
+
+            for (let key in data) {
+                if (data.hasOwnProperty(key)) {
+                    slidersArray.push({
+                        key: key,
+                        ...data[key]
+                    });
+                }
+            }
+            
+            renderSlider(slidersArray.reverse()); 
+        }, (error) => {
+            console.error("Firebase slider read failed:", error);
+            slider.innerHTML = '<p style="padding:20px; color:var(--primary-color); text-align:center; width:100%;">স্লাইডার লোড করতে সমস্যা হচ্ছে।</p>';
+        });
+        
+        // Handle window resize to keep slider position correct
+        window.addEventListener('resize', () => {
+             updateSlider();
+        });
+    </script>
+</body>
+</html>
