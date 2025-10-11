@@ -18,7 +18,6 @@
             --text-muted: #b0b0b0;
             --shadow-light: 0 4px 12px rgba(0, 0, 0, 0.5);
             --shadow-dark: 0 8px 25px rgba(0, 0, 0, 0.8);
-            /* New Shadow Variable for Slider */
             --slider-shadow: 0 10px 30px rgba(0, 0, 0, 0.9), 0 0 10px rgba(229, 9, 20, 0.5); 
         }
 
@@ -42,6 +41,33 @@
             text-decoration: none;
             color: var(--text-color);
         }
+        
+        /* --- Flash Screen Styles (নতুন যুক্ত করা হয়েছে) --- */
+        #flashScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-color); /* অথবা একটি স্থির রং যেমন #000 */
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 1;
+            transition: opacity 1s ease-out; /* ফেড-আউট প্রভাবের জন্য */
+        }
+        
+        .flash-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* পুরো স্ক্রিন জুড়েই ইমেজ থাকবে */
+        }
+        
+        #flashScreen.hidden {
+            opacity: 0;
+            pointer-events: none; /* অদৃশ্য হওয়ার পরে ক্লিক এড়াতে */
+        }
 
         /* Header Styles */
         .header {
@@ -57,7 +83,6 @@
         }
 
         .logo a {
-            /* লোগো ইমেজের জন্য এই অংশটি প্রস্তুত করা হলো */
             display: block; 
         }
         
@@ -69,8 +94,6 @@
             letter-spacing: -0.5px;
             text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
         }
-        /* লোগো ব্যবহারের জন্য: <a href="index.html"><img src="your-logo-link.png" alt="Logo" style="height: 30px;"></a> */
-
 
         /* Search Styles */
         .search-container {
@@ -136,10 +159,9 @@
             /* 16:9 Aspect Ratio */
             padding-top: 56.25%; 
             margin-bottom: 30px;
-            /* Updated: Added beautiful shadow */
             box-shadow: var(--slider-shadow); 
             border-radius: 10px;
-            transform: translate3d(0,0,0); /* For smooth hardware acceleration */
+            transform: translate3d(0,0,0); 
         }
 
         .slider {
@@ -149,13 +171,11 @@
             width: 100%;
             height: 100%;
             display: flex;
-            /* Updated: Added a class for temporary transition removal during manual slide */
             transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
             will-change: transform;
-            cursor: grab; /* Added grab cursor */
+            cursor: grab;
         }
         
-        /* New: Class to temporarily disable transition for smooth manual dragging */
         .slider.no-transition {
             transition: none !important;
         }
@@ -220,7 +240,7 @@
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
             gap: 15px;
-            margin-bottom: 20px; /* Space after each category grid */
+            margin-bottom: 20px;
         }
 
         .video-card {
@@ -352,13 +372,15 @@
             }
         }
     </style>
-    <script type='text/javascript' src='//pl27826264.effectivegatecpm.com/1a/91/83/1a918398f2501ec4856526bbb3e38627.js'></script>
 </head>
 <body>
-
+    
+    <div id="flashScreen">
+        <img src="https://i.ibb.co.com/HDdg8PRF/20251011-043015.jpg" alt="Loading Screen" class="flash-image">
+    </div>
     <div class="header">
         <div class="logo">
-                <img src="https://i.ibb.co.com/4v42n5J/IMG-20251011-041130.png" alt="OnFlix Logo" style="height: 30px; /* লোগোর উচ্চতা সেট করুন */">
+                <img src="https://i.ibb.co.com/4v42n5J/IMG-20251011-041130.png" alt="OnFlix Logo" style="height: 30px;">
             </a>
         </div>
         <div class="search-container">
@@ -400,6 +422,31 @@
     </div>
 
     <script>
+        // --- Flash Screen Logic (নতুন যুক্ত করা হয়েছে) ---
+        const flashScreen = document.getElementById('flashScreen');
+        let firebaseDataLoaded = false;
+        
+        // ফাংশন যা ফ্ল্যাশ স্ক্রিনকে অদৃশ্য করে
+        function hideFlashScreen() {
+             // 1 সেকেন্ডের ট্রানজিশন শেষ হওয়ার পর ডিসপ্লে থেকে পুরোপুরি সরিয়ে দেওয়া
+            flashScreen.classList.add('hidden');
+            setTimeout(() => {
+                flashScreen.style.display = 'none';
+            }, 1000); 
+        }
+
+        // একটা ন্যূনতম সময় সেট করা হলো যাতে ফ্ল্যাশ স্ক্রিনটি অন্তত ২ সেকেন্ড থাকে (ডেটা লোড হয়ে গেলেও)
+        setTimeout(() => {
+            if (firebaseDataLoaded) {
+                 hideFlashScreen();
+            } else {
+                 // যদি ২ সেকেন্ড পরও ডেটা লোড না হয়, তবুও অপেক্ষা না করে স্ক্রিন হাইড করার জন্য 
+                 // (যাতে ইউজার লোডিং স্ক্রিনে আটকে না থাকে, যদিও ডেটা লোড হতে পারে)
+                 // এই ক্ষেত্রে Firebase-এর ডেটা লোড হয়ে গেলে তা স্বাভাবিকভাবে রেন্ডার হবে।
+                 // তবে, Firebase লিসেনারের সফল লোডের পরেই স্ক্রিন হাইড করা আদর্শ।
+            }
+        }, 2000); 
+
         // --- Firebase Configuration & Setup ---
         const firebaseConfig = {
             apiKey: "AIzaSyBakmRixYRaHzuaR-pAUHkOJUlDG9qflJA",
@@ -468,7 +515,6 @@
             if (slides.length === 0) return;
             const translateValue = -currentSlide * slider.clientWidth;
             
-            // Set currentTranslate to the target position for auto/dot clicks
             currentTranslate = translateValue;
             
             slider.classList.remove('no-transition');
@@ -503,7 +549,6 @@
         function dragStart(event) {
             if (slides.length === 0) return;
             
-            // Prevent default drag for mouse events to keep image dragging
             if (event.type.includes('mouse')) event.preventDefault(); 
             
             isDragging = true;
@@ -511,7 +556,6 @@
             slider.classList.add('no-transition');
             cancelAnimationFrame(animationID);
             
-            // Pause auto-slide when dragging starts
             clearInterval(slideInterval); 
         }
 
@@ -521,7 +565,6 @@
             const currentPosition = getPositionX(event);
             const diff = currentPosition - startPos;
             
-            // Update the slider's position immediately without CSS transition
             currentTranslate = prevTranslate + diff;
             setSliderPosition();
         }
@@ -535,18 +578,15 @@
             const movedBy = currentTranslate - prevTranslate;
             const slideWidth = slider.clientWidth;
             
-            // Logic to determine if a full slide should happen
             if (movedBy < -slideWidth * SLIDE_THRESHOLD && currentSlide < slides.length - 1) {
-                currentSlide++; // Swipe left, go to next slide
+                currentSlide++;
             } else if (movedBy > slideWidth * SLIDE_THRESHOLD && currentSlide > 0) {
-                currentSlide--; // Swipe right, go to previous slide
+                currentSlide--;
             }
             
-            // Update to the new slide position (will use CSS transition)
             prevTranslate = -currentSlide * slideWidth;
             updateSlider(); 
             
-            // Resume auto-slide
             startSlideShow();
         }
 
@@ -566,12 +606,9 @@
             slide.className = 'slide';
             slide.style.backgroundImage = `url('${sliderData.thumbnailURL}')`;
 
-            // Make sure the entire slide is a link if it's clickable
             if (sliderData.clickable === 'true') {
-                // Ensure the click only fires if it wasn't a drag motion
                 slide.onclick = (e) => {
                     const diff = Math.abs(currentTranslate - prevTranslate);
-                    // Only navigate if the movement was negligible (i.e., it was a click, not a drag)
                     if (diff < 5) { 
                         navigateToSliderLink(sliderData.clickURL);
                     }
@@ -600,7 +637,6 @@
 
                 const dot = document.createElement('span');
                 dot.className = 'dot';
-                // Clicking dot should also restart auto-slide
                 dot.onclick = () => { 
                     currentSlide = index; 
                     updateSlider(); 
@@ -610,8 +646,8 @@
             });
 
             currentSlide = 0;
-            prevTranslate = 0; // Reset manual slide state
-            currentTranslate = 0; // Reset manual slide state
+            prevTranslate = 0;
+            currentTranslate = 0;
             updateSlider();
             startSlideShow();
         }
@@ -742,8 +778,6 @@
             const dramaVideos = videos.filter(v => v.category === 'Drama');
             const webSeriesVideos = videos.filter(v => v.category === 'Web Series');
             
-            // Insert sections in reverse order so they appear correctly after the slider
-            
             if (movieVideos.length > 0) {
                 sliderContainer.insertAdjacentElement('afterend', createSection("Movie", "Movie", movieVideos));
             }
@@ -756,7 +790,6 @@
                 sliderContainer.insertAdjacentElement('afterend', createSection("Web Series", "Web Series", webSeriesVideos));
             }
 
-            // Fallback message
             if (movieVideos.length === 0 && dramaVideos.length === 0 && webSeriesVideos.length === 0) {
                  sliderContainer.insertAdjacentHTML('afterend', '<h2 style="text-align:center; color:var(--text-muted); margin-top: 30px;">কোনো ভিডিও আপলোড করা হয়নি।</h2>');
             }
@@ -784,10 +817,20 @@
             if (searchInput.value.length < 2) {
                  renderAllCategories(allVideos);
             }
+            
+            // ডেটা লোড হওয়ার পরে ফ্ল্যাশ স্ক্রিন হাইড করার জন্য ফ্ল্যাগ সেট করা হলো
+            firebaseDataLoaded = true;
+            // এই ফাংশনটি setTimeout এর ২ সেকেন্ডের সময়সীমার আগেই ডেটা লোড হয়ে গেলে ফ্ল্যাশ স্ক্রিন হাইড করবে।
+            hideFlashScreen(); 
+            
         }, (error) => {
             console.error("Firebase video read failed:", error);
             const contentArea = document.querySelector('.content-section');
             contentArea.insertAdjacentHTML('beforeend', '<p style="text-align:center; color:var(--primary-color); padding: 30px;">ভিডিও লোড করতে সমস্যা হচ্ছে। Firebase সংযোগ পরীক্ষা করুন।</p>');
+            
+            // এরর হলেও ফ্ল্যাশ স্ক্রিন হাইড করে দেওয়া উচিত
+            firebaseDataLoaded = true;
+            hideFlashScreen();
         });
         
         // 2. Slider Data Listener
@@ -816,4 +859,4 @@
         });
     </script>
 </body>
-</html>
+    </html>
