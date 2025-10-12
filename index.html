@@ -7,6 +7,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+    
     <style>
         /* Base and Utility Styles - Dark Theme */
         :root {
@@ -205,6 +206,35 @@
         .content-section {
             padding: 0 0 80px 0; /* Changed right/left padding to 0 */
         }
+        
+        /* New Ad Container Style */
+        .ad-banner-container {
+            width: 100%;
+            /* max-width: 728px; Remove max-width for full width responsiveness */
+            margin: 20px auto 30px auto; /* Centering and spacing */
+            text-align: center;
+            padding: 0 15px; /* Added horizontal padding for smaller screens */
+            overflow: hidden; /* Hide anything outside */
+        }
+        
+        .ad-banner-container iframe {
+            max-width: 100%;
+            height: 90px;
+            margin: 0 auto; /* Center the iframe/ad content */
+            display: block;
+        }
+        /* End Ad Container Style */
+        
+        /* New Native Ad Container Style - Removed the old one, keeping the style in case a banner is needed */
+        .native-ad-container {
+             width: 100%;
+             max-width: 728px; /* Optional: Constrain width like the banner */
+             margin: 30px auto 40px auto; /* Added extra margin for separation */
+             text-align: center;
+             padding: 0 15px;
+        }
+        /* End Native Ad Container Style */
+
 
         h2 {
             margin: 25px 15px 15px; /* Added left/right padding to heading */
@@ -277,8 +307,8 @@
             height: 100%;
             object-fit: cover;
             border-bottom: 2px solid var(--primary-color);
-            border-top-left-radius: 10px; /* added for consistent rounding */
-            border-top-right-radius: 10px; /* added for consistent rounding */
+            border-top-left-radius: 10px; 
+            border-top-right-radius: 10px; 
         }
 
         .video-info {
@@ -292,7 +322,6 @@
             font-size: 0.9em;
             font-weight: 700;
             margin: 0; 
-            /* UPDATED: Increased height slightly to better accommodate 2 lines across different devices/fonts */
             line-height: 1.1em;
             height: 2.2em; /* Ensure max two lines can fit comfortably */
             overflow: hidden;
@@ -356,6 +385,14 @@
             }
         }
 
+        @media (min-width: 768px) {
+            /* Ad Banner adjustment for tablet/desktop */
+            .ad-banner-container {
+                max-width: 728px; /* Standard large banner size */
+                padding: 0;
+            }
+        }
+
         @media (min-width: 1024px) {
             .horizontal-slider {
                 /* For larger screens, increase card size slightly */
@@ -388,6 +425,7 @@
             }
         }
     </style>
+    <script type='text/javascript' src='//pl27826264.effectivegatecpm.com/1a/91/83/1a918398f2501ec4856526bbb3e38627.js'></script>
 </head>
 <body>
 
@@ -413,7 +451,20 @@
                 </div>
         </div>
         
-    </div>
+        <div class="ad-banner-container">
+            <script type="text/javascript">
+                atOptions = {
+                    'key' : '9dc71cd6050171b4dc4aae625dfc8861',
+                    'format' : 'iframe',
+                    'height' : 90,
+                    'width' : 728,
+                    'params' : {}
+                };
+            </script>
+            <script type="text/javascript" src="//www.highperformanceformat.com/9dc71cd6050171b4dc4aae625dfc8861/invoke.js"></script>
+        </div>
+        
+    </div> 
     
     <div class="footer">
         <a href="index.html" class="footer-item active">
@@ -434,6 +485,8 @@
         </a>
     </div>
 
+    <script type='text/javascript' src='//pl27839228.effectivegatecpm.com/76/73/9b/76739b36ed6d9c5c41b26e1c1304bcf8.js'></script>
+    
     <script>
         // --- Firebase Configuration & Setup ---
         const firebaseConfig = {
@@ -490,7 +543,6 @@
         let startPos = 0;
         let currentTranslate = 0;
         let prevTranslate = 0;
-        let animationID = 0;
         const SLIDE_THRESHOLD = 0.15;
 
         function setSliderPosition() {
@@ -678,7 +730,15 @@
                  searchSection = document.createElement('div');
                  searchSection.id = 'searchSection';
                  searchSection.className = 'content-section-category';
-                 sliderContainer.insertAdjacentElement('afterend', searchSection);
+                 
+                 // Ad-banner এর পরে search section যুক্ত করা হবে
+                 const adBanner = document.querySelector('.ad-banner-container');
+                 
+                 if (adBanner) {
+                    adBanner.insertAdjacentElement('afterend', searchSection);
+                 } else {
+                    sliderContainer.insertAdjacentElement('afterend', searchSection);
+                 }
             }
             
             searchSection.innerHTML = '<h2>অনুসন্ধানের ফলাফল</h2>';
@@ -712,7 +772,7 @@
 
             const filteredVideos = allVideos.filter(video =>
                 video.title.toLowerCase().includes(query) || 
-                (video.description && video.description.toLowerCase().includes(query)) // Ensure description check is safe
+                (video.description && video.description.toLowerCase().includes(query))
             );
 
             filteredVideos.slice(0, 5).forEach(video => {
@@ -750,7 +810,7 @@
         // --- Main Rendering Function (Category Order: Movie -> Drama -> Web Series) ---
         function renderAllCategories(videos) {
             const contentArea = document.querySelector('.content-section');
-            const sliderContainer = document.querySelector('.slider-container');
+            const adBanner = document.querySelector('.ad-banner-container');
             
             const existingSections = contentArea.querySelectorAll('.content-section-category');
             existingSections.forEach(section => section.remove());
@@ -762,7 +822,13 @@
             const dramaVideos = videos.filter(v => v.category === 'Drama');
             const webSeriesVideos = videos.filter(v => v.category === 'Web Series');
             
-            let lastElement = sliderContainer;
+            let lastElement = adBanner; 
+            
+            if (!lastElement) {
+                // যদি কোনো বিজ্ঞাপন কনটেইনার না থাকে, তবে স্লাইডারের পরেই শুরু হবে।
+                lastElement = document.querySelector('.slider-container');
+            }
+
 
             // 1. Movie
             if (movieVideos.length > 0) {
@@ -788,7 +854,8 @@
 
             // Fallback message
             if (movieVideos.length === 0 && dramaVideos.length === 0 && webSeriesVideos.length === 0) {
-                 sliderContainer.insertAdjacentHTML('afterend', '<h2 style="text-align:center; color:var(--text-muted); margin-top: 30px;">কোনো ভিডিও আপলোড করা হয়নি।</h2>');
+                 // যদি কোনো কন্টেন্ট না থাকে, তবে শেষ বিজ্ঞাপন কনটেইনারের পরেই ফলব্যাক মেসেজটি দেখাবে।
+                 lastElement.insertAdjacentHTML('afterend', '<h2 style="text-align:center; color:var(--text-muted); margin-top: 30px;">কোনো ভিডিও আপলোড করা হয়নি।</h2>');
             }
         }
 
