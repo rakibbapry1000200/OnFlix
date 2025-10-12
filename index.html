@@ -128,7 +128,7 @@
             color: var(--secondary-color);
         }
 
-        /* Slider Styles */
+        /* Hero Slider Styles (Main Slider) */
         .slider-container {
             width: 100%;
             overflow: hidden;
@@ -201,13 +201,13 @@
             transform: scale(1.2);
         }
 
-        /* Video Grid Styles */
+        /* Video Section Styles (UPDATED for horizontal scroll) */
         .content-section {
-            padding: 0 15px 80px;
+            padding: 0 0 80px 0; /* Changed right/left padding to 0 */
         }
 
         h2 {
-            margin: 25px 0 15px;
+            margin: 25px 15px 15px; /* Added left/right padding to heading */
             font-size: 1.6em;
             color: var(--text-color);
             border-left: 4px solid var(--primary-color);
@@ -216,17 +216,39 @@
             align-items: center;
         }
 
-        .video-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-            gap: 15px;
-            margin-bottom: 20px; /* Space after each category grid */
+        /* NEW: Horizontal Slider Container for Categories */
+        .horizontal-slider-container {
+            width: 100%;
+            overflow-x: auto; /* Enable horizontal scrolling */
+            -webkit-overflow-scrolling: touch;
+            padding: 0 15px 20px 15px; /* Add padding to the sides and bottom */
+            margin-bottom: 20px;
+        }
+
+        /* Hide scrollbar for a cleaner look */
+        .horizontal-slider-container::-webkit-scrollbar {
+            display: none;
+        }
+        .horizontal-slider-container {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+        /* END NEW: Horizontal Slider Container */
+
+
+        /* NEW: Horizontal Slider (The wrapper for cards) */
+        .horizontal-slider {
+            display: flex;
+            gap: 15px; /* Space between cards */
+            padding-bottom: 5px; /* Extra padding for potential shadow/scroll area */
         }
 
         .video-card {
+            /* Min-width is crucial for horizontal layout */
+            min-width: 140px; 
+            width: 140px; /* Fixed width for consistent look */
             background-color: var(--card-bg);
             border-radius: 10px;
-            overflow: hidden;
             box-shadow: var(--shadow-light);
             transition: transform 0.3s ease-in-out, box-shadow 0.3s;
             cursor: pointer;
@@ -255,33 +277,32 @@
             height: 100%;
             object-fit: cover;
             border-bottom: 2px solid var(--primary-color);
+            border-top-left-radius: 10px; /* added for consistent rounding */
+            border-top-right-radius: 10px; /* added for consistent rounding */
         }
 
         .video-info {
             padding: 10px;
+            height: 50px; /* Fixed height for info area */
+            display: flex;
+            align-items: center; /* Vertically center content */
         }
 
         .video-title {
             font-size: 0.9em;
             font-weight: 700;
-            margin: 0 0 5px;
-            height: 2.2em;
+            margin: 0; 
+            /* UPDATED: Increased height slightly to better accommodate 2 lines across different devices/fonts */
+            line-height: 1.1em;
+            height: 2.2em; /* Ensure max two lines can fit comfortably */
             overflow: hidden;
             display: -webkit-box;
-            -webkit-line-clamp: 2;
+            -webkit-line-clamp: 2; /* Clamp to exactly two lines */
             -webkit-box-orient: vertical;
+            text-overflow: ellipsis;
+            width: 100%; /* Ensure it takes full width of the container */
         }
 
-        .video-description {
-            font-size: 0.75em;
-            color: var(--text-muted);
-            margin: 0;
-            height: 2.25em;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
 
         /* Footer Styles */
         .footer {
@@ -329,19 +350,34 @@
 
         /* Responsive Adjustments */
         @media (min-width: 600px) {
-            .video-grid {
-                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            .video-card {
+                min-width: 180px;
+                width: 180px;
             }
         }
 
         @media (min-width: 1024px) {
-            .video-grid {
-                grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            .horizontal-slider {
+                /* For larger screens, increase card size slightly */
+                gap: 20px;
             }
+            .video-card {
+                min-width: 220px;
+                width: 220px;
+            }
+            
+            /* Center the content on large screens */
             .content-section {
                 max-width: 1300px;
                 margin: 0 auto;
-                padding: 0 30px 20px;
+                padding: 0 0 20px 0; /* Keep 0 for horizontal scroll sections */
+            }
+            .horizontal-slider-container {
+                 /* Adjust padding for the centered content */
+                 padding: 0 30px 20px 30px; 
+            }
+            h2 {
+                margin: 25px 30px 15px; /* Adjust heading padding */
             }
             .footer {
                 display: none;
@@ -425,7 +461,7 @@
              }
         }
 
-        // --- Data Fetching, Rendering, and Slider Logic (UPDATED) ---
+        // --- Data Fetching, Rendering, and Slider Logic ---
         let allVideos = [];
 
         function createVideoCard(video) {
@@ -439,25 +475,23 @@
                 </div>
                 <div class="video-info">
                     <h3 class="video-title">${video.title}</h3>
-                    <p class="video-description">${video.description}</p>
-                </div>
+                    </div>
             `;
             return card;
         }
 
-        // Slider Logic
+        // --- Hero Slider Logic ---
         const slider = document.getElementById('slider');
         const sliderDotsContainer = document.getElementById('sliderDots');
         let currentSlide = 0;
         let slideInterval;
         let slides = [];
-        // Manual Slide Variables
         let isDragging = false;
         let startPos = 0;
         let currentTranslate = 0;
         let prevTranslate = 0;
         let animationID = 0;
-        const SLIDE_THRESHOLD = 0.15; // 15% of screen width to register a slide
+        const SLIDE_THRESHOLD = 0.15;
 
         function setSliderPosition() {
              slider.style.transform = `translateX(${currentTranslate}px)`;
@@ -467,7 +501,6 @@
             if (slides.length === 0) return;
             const translateValue = -currentSlide * slider.clientWidth;
             
-            // Set currentTranslate to the target position for auto/dot clicks
             currentTranslate = translateValue;
             
             slider.classList.remove('no-transition');
@@ -493,63 +526,46 @@
             }
         }
         
-        // --- Touch/Mouse Event Handlers for Manual Slide ---
-        
         function getPositionX(event) {
             return event.type.includes('mouse') ? event.pageX : event.touches[0].clientX;
         }
         
         function dragStart(event) {
             if (slides.length === 0) return;
-            
-            // Prevent default drag for mouse events to keep image dragging
             if (event.type.includes('mouse')) event.preventDefault(); 
-            
             isDragging = true;
             startPos = getPositionX(event);
             slider.classList.add('no-transition');
             cancelAnimationFrame(animationID);
-            
-            // Pause auto-slide when dragging starts
             clearInterval(slideInterval); 
         }
 
         function drag(event) {
             if (!isDragging) return;
-            
             const currentPosition = getPositionX(event);
             const diff = currentPosition - startPos;
-            
-            // Update the slider's position immediately without CSS transition
             currentTranslate = prevTranslate + diff;
             setSliderPosition();
         }
 
         function dragEnd() {
             if (!isDragging) return;
-            
             isDragging = false;
             slider.classList.remove('no-transition');
-            
             const movedBy = currentTranslate - prevTranslate;
             const slideWidth = slider.clientWidth;
             
-            // Logic to determine if a full slide should happen
             if (movedBy < -slideWidth * SLIDE_THRESHOLD && currentSlide < slides.length - 1) {
-                currentSlide++; // Swipe left, go to next slide
+                currentSlide++; 
             } else if (movedBy > slideWidth * SLIDE_THRESHOLD && currentSlide > 0) {
-                currentSlide--; // Swipe right, go to previous slide
+                currentSlide--; 
             }
             
-            // Update to the new slide position (will use CSS transition)
             prevTranslate = -currentSlide * slideWidth;
             updateSlider(); 
-            
-            // Resume auto-slide
             startSlideShow();
         }
 
-        // Add event listeners
         slider.addEventListener('mousedown', dragStart);
         slider.addEventListener('mouseup', dragEnd);
         slider.addEventListener('mouseleave', dragEnd);
@@ -565,12 +581,9 @@
             slide.className = 'slide';
             slide.style.backgroundImage = `url('${sliderData.thumbnailURL}')`;
 
-            // Make sure the entire slide is a link if it's clickable
             if (sliderData.clickable === 'true') {
-                // Ensure the click only fires if it wasn't a drag motion
                 slide.onclick = (e) => {
                     const diff = Math.abs(currentTranslate - prevTranslate);
-                    // Only navigate if the movement was negligible (i.e., it was a click, not a drag)
                     if (diff < 5) { 
                         navigateToSliderLink(sliderData.clickURL);
                     }
@@ -599,7 +612,6 @@
 
                 const dot = document.createElement('span');
                 dot.className = 'dot';
-                // Clicking dot should also restart auto-slide
                 dot.onclick = () => { 
                     currentSlide = index; 
                     updateSlider(); 
@@ -609,13 +621,13 @@
             });
 
             currentSlide = 0;
-            prevTranslate = 0; // Reset manual slide state
-            currentTranslate = 0; // Reset manual slide state
+            prevTranslate = 0;
+            currentTranslate = 0;
             updateSlider();
             startSlideShow();
         }
 
-        // Section Rendering Logic
+        // Section Rendering Logic (Horizontal Scroll)
         function createSection(title, category, videos) {
             const sectionDiv = document.createElement('div');
             sectionDiv.className = 'content-section-category';
@@ -626,20 +638,26 @@
             
             sectionDiv.appendChild(sectionHeader);
 
-            const grid = document.createElement('div');
-            grid.className = 'video-grid';
+            // NEW: Horizontal Slider Container
+            const sliderContainer = document.createElement('div');
+            sliderContainer.className = 'horizontal-slider-container';
+
+            // NEW: Horizontal Slider
+            const slider = document.createElement('div');
+            slider.className = 'horizontal-slider';
             
             const videosToShow = videos.slice(0, 20); 
 
             if (videosToShow.length === 0) {
-                 grid.innerHTML = `<p style="text-align:center; color:var(--text-muted); grid-column: 1 / -1; margin-top: 10px;">এই সেকশনে কোনো ভিডিও পাওয়া যায়নি।</p>`;
+                 sliderContainer.innerHTML = `<p style="text-align:center; color:var(--text-muted); padding: 10px 15px 0;">এই সেকশনে কোনো ভিডিও পাওয়া যায়নি।</p>`;
             } else {
                  videosToShow.forEach(video => {
-                    grid.appendChild(createVideoCard(video));
+                    slider.appendChild(createVideoCard(video));
                 });
+                sliderContainer.appendChild(slider);
             }
             
-            sectionDiv.appendChild(grid);
+            sectionDiv.appendChild(sliderContainer);
             return sectionDiv;
         }
 
@@ -665,18 +683,21 @@
             
             searchSection.innerHTML = '<h2>অনুসন্ধানের ফলাফল</h2>';
             
+            const sliderContainer_search = document.createElement('div');
+            sliderContainer_search.className = 'horizontal-slider-container';
             const grid = document.createElement('div');
-            grid.className = 'video-grid';
+            grid.className = 'horizontal-slider'; 
             
             if (videos.length === 0) {
-                grid.innerHTML = `<p style="text-align:center; color:var(--text-muted); grid-column: 1 / -1; margin-top: 10px;">আপনার অনুসন্ধানের সাথে মেলে এমন কোনো ভিডিও পাওয়া যায়নি।</p>`;
+                sliderContainer_search.innerHTML = `<p style="text-align:center; color:var(--text-muted); padding: 10px 15px 0;">আপনার অনুসন্ধানের সাথে মেলে এমন কোনো ভিডিও পাওয়া যায়নি।</p>`;
             } else {
                  videos.forEach(video => {
                     grid.appendChild(createVideoCard(video));
                 });
+                sliderContainer_search.appendChild(grid);
             }
             
-            searchSection.appendChild(grid);
+            searchSection.appendChild(sliderContainer_search);
         }
 
         function handleSearchInput() {
@@ -691,7 +712,7 @@
 
             const filteredVideos = allVideos.filter(video =>
                 video.title.toLowerCase().includes(query) || 
-                video.description.toLowerCase().includes(query)
+                (video.description && video.description.toLowerCase().includes(query)) // Ensure description check is safe
             );
 
             filteredVideos.slice(0, 5).forEach(video => {
@@ -715,7 +736,7 @@
              const finalQuery = query.toLowerCase().trim();
              const filteredVideos = allVideos.filter(video =>
                 video.title.toLowerCase().includes(finalQuery) || 
-                video.description.toLowerCase().includes(finalQuery)
+                (video.description && video.description.toLowerCase().includes(finalQuery))
             );
             renderSearchResults(filteredVideos);
         }
@@ -726,7 +747,7 @@
             }
         });
 
-        // --- Main Rendering Function ---
+        // --- Main Rendering Function (Category Order: Movie -> Drama -> Web Series) ---
         function renderAllCategories(videos) {
             const contentArea = document.querySelector('.content-section');
             const sliderContainer = document.querySelector('.slider-container');
@@ -741,19 +762,29 @@
             const dramaVideos = videos.filter(v => v.category === 'Drama');
             const webSeriesVideos = videos.filter(v => v.category === 'Web Series');
             
-            // Insert sections in reverse order so they appear correctly after the slider
-            
+            let lastElement = sliderContainer;
+
+            // 1. Movie
             if (movieVideos.length > 0) {
-                sliderContainer.insertAdjacentElement('afterend', createSection("Movie", "Movie", movieVideos));
+                const movieSection = createSection("Movie", "Movie", movieVideos);
+                lastElement.insertAdjacentElement('afterend', movieSection);
+                lastElement = movieSection;
             }
 
+            // 2. Drama
             if (dramaVideos.length > 0) {
-                sliderContainer.insertAdjacentElement('afterend', createSection("Drama", "Drama", dramaVideos));
+                const dramaSection = createSection("Drama", "Drama", dramaVideos);
+                lastElement.insertAdjacentElement('afterend', dramaSection);
+                lastElement = dramaSection;
             }
 
+            // 3. Web Series
             if (webSeriesVideos.length > 0) {
-                sliderContainer.insertAdjacentElement('afterend', createSection("Web Series", "Web Series", webSeriesVideos));
+                const webSeriesSection = createSection("Web Series", "Web Series", webSeriesVideos);
+                lastElement.insertAdjacentElement('afterend', webSeriesSection);
+                lastElement = webSeriesSection;
             }
+
 
             // Fallback message
             if (movieVideos.length === 0 && dramaVideos.length === 0 && webSeriesVideos.length === 0) {
@@ -815,4 +846,4 @@
         });
     </script>
 </body>
-            </html>
+    </html>
