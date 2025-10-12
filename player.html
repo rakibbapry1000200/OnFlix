@@ -44,7 +44,7 @@
             flex-grow: 1;
         }
         
-        /* --- Header & Navigation Bar (Updated) --- */
+        /* --- Header & Navigation Bar (Identical) --- */
         .header-bar {
             display: flex;
             justify-content: space-between;
@@ -59,7 +59,6 @@
         
         .logo a img {
             height: 30px; /* লোগো উচ্চতা */
-            /* লোগোকে সার্চ ইনপুট থেকে সামান্য দূরে রাখতে */
             margin-right: 15px; 
         }
 
@@ -128,7 +127,6 @@
             justify-content: center;
             transition: background-color 0.3s ease, transform 0.2s;
             box-shadow: var(--shadow-subtle);
-            /* নিশ্চিত করা হলো যে এটি ডানদিকে থাকবে */
             margin-left: 15px; 
             flex-shrink: 0;
         }
@@ -193,33 +191,153 @@
             100% { transform: rotate(360deg); }
         }
 
-        /* --- Details & Description (UPDATED) --- */
+        /* --- Details & Description UPDATES --- */
         .content-details {
             padding: 20px;
         }
 
+        /* Title Styling */
         .content-details h1 {
-            /* Smaller, less bold title, similar to YouTube */
             color: var(--text-color);
-            font-size: 1.8em; /* Reduced from 2.2em */
-            font-weight: 700;
-            margin-top: 15px; /* Adjusted margin */
-            margin-bottom: 8px; /* Adjusted margin */
-            border-left: none; /* Removed the red border for cleaner look */
+            font-size: 1.5em; 
+            font-weight: 500; 
+            margin: 0;
             padding-left: 0;
             line-height: 1.3;
+            text-align: left;
+            margin-bottom: 10px; /* Space before the action bar */
+        }
+        
+        /* Removed .arrow-center-container as the button moves to video-info-bar */
+
+        /* Updated: Main Action Bar to hold both Share and Description Toggle */
+        .video-info-bar {
+            display: flex;
+            justify-content: flex-end; /* Align the buttons to the right */
+            align-items: center;
+            margin-bottom: 15px;
+            padding-right: 5px; 
         }
 
-        .content-details p {
-            /* Smaller, muted description, similar to YouTube */
+        /* Action Buttons Container */
+        .action-buttons {
+            display: flex;
+            gap: 15px; /* Space between buttons */
+        }
+
+        /* Description Toggle Button - Styled like an action button, alongside share */
+        #descriptionToggle {
+            background: rgba(255, 255, 255, 0.1); 
+            border: none;
+            color: var(--text-color);
+            cursor: pointer;
+            padding: 8px 12px; 
+            border-radius: 20px; 
+            transition: background-color 0.2s, transform 0.1s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 500;
+            font-size: 0.9em;
+            gap: 5px;
+        }
+        
+        #descriptionToggle:hover {
+             background-color: rgba(255, 255, 255, 0.2);
+        }
+        #descriptionToggle:active {
+            transform: scale(0.98);
+        }
+
+        .description-arrow-svg {
+            width: 20px; /* Reduced size to match share icon */
+            height: 20px;
+            fill: currentColor; /* Inherit color from button text (white) */
+            transition: transform 0.3s;
+        }
+        
+        /* Description Toggle Icon Rotation */
+        #descriptionToggle.active .description-arrow-svg {
+            transform: rotate(180deg); /* Rotated state (up arrow) */
+        }
+        
+        /* Share Button (General Action Button) - Consistent styling */
+        .action-button {
+            background: rgba(255, 255, 255, 0.1); 
+            border: none;
+            color: var(--text-color);
+            cursor: pointer;
+            padding: 8px 12px; 
+            border-radius: 20px; 
+            transition: background-color 0.2s, transform 0.1s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 500;
+            font-size: 0.9em;
+            gap: 5px;
+        }
+
+        .action-button:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Share button animation on click */
+        .action-button:active {
+            transform: scale(0.98);
+        }
+        
+        .action-button svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+            transition: transform 0.3s;
+        }
+        
+        #videoDescriptionDisplay {
             color: var(--text-muted);
             line-height: 1.5;
-            font-size: 0.95em; /* Reduced from 1em */
+            font-size: 0.9em; 
             white-space: pre-wrap;
-            margin-top: 5px;
+            padding: 10px;
+            background-color: #222; 
+            border-radius: 8px;
+            transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+            max-height: 0; 
+            opacity: 0;
+            overflow: hidden;
         }
-
-        /* --- Related Videos Section (Related Card Title UPDATED) --- */
+        
+        #videoDescriptionDisplay.expanded {
+            max-height: 500px; 
+            opacity: 1;
+            margin-top: 15px;
+        }
+        
+        /* Link Copy Animation */
+        #copyFeedback {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.5); /* Start smaller */
+            background-color: var(--primary-color); /* Red background */
+            color: var(--text-color);
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            z-index: 10000;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out, transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55); /* Bounce effect transition */
+            pointer-events: none;
+            box-shadow: var(--shadow-dark);
+        }
+        
+        #copyFeedback.show {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1); /* Bounce to full size */
+        }
+        
+        /* --- Related Videos Section (Identical) --- */
         .related-videos-section {
             padding: 0 20px;
             margin-top: 40px;
@@ -269,9 +387,8 @@
         }
 
         .related-card-title {
-            /* Related card title made smaller */
-            padding: 8px 10px; /* Reduced padding */
-            font-size: 0.85em; /* Reduced font size */
+            padding: 8px 10px; 
+            font-size: 0.85em; 
             font-weight: 600;
             color: var(--text-color);
             margin: 0;
@@ -288,12 +405,11 @@
             .header-bar {
                 padding: 10px 15px;
             }
-            /* ছোট স্ক্রিনে সার্চ ইনপুট লুকানো হলো */
             .search-container {
                 display: none; 
             }
             .content-details h1 {
-                font-size: 1.5em; /* Even smaller title on mobile */
+                font-size: 1.3em; 
             }
         }
         
@@ -339,8 +455,28 @@
         
         <div class="content-details">
             <h1 id="videoTitleDisplay">ভিডিও লোড হচ্ছে...</h1>
-            <p id="videoDescriptionDisplay"></p>
-            <p id="errorMessage" style="color:var(--primary-color); display:none; font-weight:bold;"></p>
+            
+            <div class="video-info-bar">
+                <p id="errorMessage" style="color:var(--primary-color); display:none; font-weight:bold; margin:0;"></p>
+                
+                <div class="action-buttons">
+                    <button id="descriptionToggle" title="ডেসক্রিপশন দেখুন">
+                        <svg class="description-arrow-svg" viewBox="0 0 24 24">
+                            <path d="M7 10l5 5 5-5z"/>
+                        </svg>
+                        <span>Description</span>
+                    </button>
+                    
+                    <button id="shareButton" class="action-button" title="শেয়ার করুন">
+                        <svg viewBox="0 0 16 16" fill="currentColor">
+                            <path d="M13.5 1a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3M11 2.5a2.5 2.5 0 1 1 .603 1.628l-6.718 3.12a2.5 2.5 0 0 1 0 1.504l6.718 3.12a2.5 2.5 0 1 1-.488.876l-6.718-3.12a2.5 2.5 0 1 1 0-3.256l6.718-3.12A2.5 2.5 0 0 1 11 2.5m-8.5 4a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3m11 5.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3"/>
+                        </svg>
+                        <span>শেয়ার</span>
+                    </button>
+                </div>
+            </div>
+            
+            <div id="videoDescriptionDisplay">কোনো বর্ণনা নেই।</div>
         </div>
 
         <div class="related-videos-section" style="display:none;" id="relatedVideosSection">
@@ -349,9 +485,11 @@
                 </div>
         </div>
     </div>
+    
+    <div id="copyFeedback">Link Copied!</div>
 
     <script>
-        // --- Firebase Configuration ---
+        // --- Firebase Configuration (Identical) ---
         const firebaseConfig = {
             apiKey: "AIzaSyBakmRixYRaHzuaR-pAUHkOJUlDG9qflJA",
             authDomain: "ad420-1780f.firebaseapp.com",
@@ -375,12 +513,17 @@
         const relatedVideosSection = document.getElementById('relatedVideosSection');
         const relatedVideoGrid = document.getElementById('relatedVideoGrid');
         
+        // --- New Elements ---
+        const descriptionToggle = document.getElementById('descriptionToggle');
+        const shareButton = document.getElementById('shareButton');
+        const copyFeedback = document.getElementById('copyFeedback');
+        
         // --- Search Elements ---
         const searchInput = document.getElementById('searchInput');
         const searchResultsContainer = document.getElementById('searchResults');
-        let allVideos = []; // To store all videos for search
+        let allVideos = []; 
 
-        // --- Utility Functions ---
+        // --- Utility Functions (Identical) ---
         function getQueryParam(param) {
             const urlParams = new URLSearchParams(window.location.search);
             return urlParams.get(param);
@@ -400,7 +543,56 @@
             return card;
         }
 
-        // --- Search Logic ---
+        // --- Description Toggle Logic ---
+        function toggleDescription() {
+            videoDescriptionDisplay.classList.toggle('expanded');
+            descriptionToggle.classList.toggle('active');
+        }
+
+        descriptionToggle.addEventListener('click', toggleDescription);
+        
+        // --- Share & Link Copy Logic (Link Copy Animation Logic is Here) ---
+        async function copyVideoLink() {
+            const videoKey = getQueryParam('key');
+            if (!videoKey) return;
+
+            // Generate the unique link for the current video
+            const videoLink = `${window.location.origin}${window.location.pathname}?key=${videoKey}`;
+
+            try {
+                // Use the built-in Web Share API if available (more native experience)
+                if (navigator.share) {
+                    await navigator.share({
+                        title: document.title,
+                        url: videoLink,
+                    });
+                } else {
+                    // Fallback to clipboard copy
+                    await navigator.clipboard.writeText(videoLink);
+                    
+                    // Show feedback animation
+                    copyFeedback.textContent = 'Link Copied!';
+                    copyFeedback.classList.add('show');
+                    setTimeout(() => {
+                        copyFeedback.classList.remove('show');
+                    }, 2000); // Hide after 2 seconds (matching CSS transition)
+                }
+
+            } catch (err) {
+                // If sharing or copying failed
+                console.error('Failed to share or copy text: ', err);
+                copyFeedback.textContent = 'Failed to Copy!';
+                copyFeedback.classList.add('show');
+                setTimeout(() => {
+                    copyFeedback.classList.remove('show');
+                }, 2000);
+            }
+        }
+
+        shareButton.addEventListener('click', copyVideoLink);
+
+
+        // --- Search Logic (Identical) ---
         function handleSearchInput() {
             const query = searchInput.value.toLowerCase().trim();
             searchResultsContainer.innerHTML = '';
@@ -428,7 +620,6 @@
             searchResultsContainer.style.display = filteredVideos.length > 0 ? 'block' : 'none';
         }
 
-        // Attach event listeners for search
         searchInput.addEventListener('input', handleSearchInput);
         document.addEventListener('click', (event) => {
             if (!event.target.closest('.search-container')) {
@@ -437,7 +628,7 @@
         });
 
 
-        // --- Related Videos Logic ---
+        // --- Related Videos Logic (Identical) ---
         function loadRelatedVideos(currentKey, currentCategory) {
              const relatedVideos = allVideos.filter(video =>
                 video.category === currentCategory && video.key !== currentKey
@@ -453,7 +644,7 @@
             }
         }
 
-        // --- Core Video Load Logic ---
+        // --- Core Video Load Logic (Identical with minor description fix) ---
         const videoKey = getQueryParam('key');
         const categoryParam = getQueryParam('category');
 
@@ -483,7 +674,11 @@
                     const category = videoData.category || categoryParam || 'Unknown';
 
                     videoTitleDisplay.textContent = title;
-                    videoDescriptionDisplay.textContent = videoData.description || 'কোনো বর্ণনা নেই।';
+                    
+                    // Display a default description if none is available
+                    const descriptionText = videoData.description || 'এই ভিডিওটির কোনো বর্ণনা নেই।';
+                    videoDescriptionDisplay.textContent = descriptionText;
+                    
                     pageTitle.textContent = title + ' | OnFlix';
                     
                     let embedUrl = videoData.embedLink;
@@ -516,7 +711,8 @@
                  // Database Error
                  videoLoader.style.display = 'none';
                  videoTitleDisplay.textContent = 'ডেটাবেস ত্রুটি';
-                 videoDescriptionDisplay.textContent = `ডেটা লোড করতে সমস্যা হয়েছে: ${error.message}`;
+                 videoDescriptionDisplay.textContent = '';
+                 errorMessage.textContent = `ডেটা লোড করতে সমস্যা হয়েছে: ${error.message}`;
                  errorMessage.style.display = 'block';
                  pageTitle.textContent = 'ত্রুটি';
             });
@@ -524,11 +720,11 @@
             // Missing Key Error
             videoLoader.style.display = 'none';
             videoTitleDisplay.textContent = 'ভুল লিংক';
-            videoDescriptionDisplay.textContent = 'ভিডিওর আইডি খুঁজে পাওয়া যায়নি।';
+            videoDescriptionDisplay.textContent = '';
             errorMessage.textContent = 'লিংকটি সঠিক নয়। অনুগ্রহ করে সঠিক ভিডিও আইডি সহ লিংক ব্যবহার করুন।';
             errorMessage.style.display = 'block';
             pageTitle.textContent = 'ত্রুটি';
         }
     </script>
 </body>
-</html>
+                </html>
