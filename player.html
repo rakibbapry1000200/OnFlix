@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="pageTitle">OnFlix</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+    <style>
+        /* --- Professional Dark Theme Variables --- */
+        :root {
+            --primary-color: #e50914; /* Netflix Red */
+            --secondary-color: #00bcd4; /* Cyan Accent */
+            --bg-color: #0f0f0f; /* Deep Dark Background */
+            --card-bg: #1a1a1a;
+            --text-color: #ffffff;
+            --text-muted: #999; /* Slightly darker muted text */
+            --shadow-subtle: 0 4px 10px rgba(0, 0, 0, 0.5);
+            --shadow-dark: 0 8px 25px rgba(0, 0, 0, 0.8);
+            --link-color: #00bcd4; /* For clickable links in description */
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        a {
+            text-decoration: none;
+            color: var(--text-color);
+        }
+
+        .main-content {
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+            padding-bottom: 30px; 
+            flex-grow: 1;
+        }
+        
+        /* --- Header & Navigation Bar (Identical) --- */
+        .header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            background-color: var(--card-bg);
+            box-shadow: var(--shadow-dark);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        
+        .logo a img {
+            height: 30px; /* লোগো উচ্চতা */
+            margin-right: 15px; 
+        }
+
+        .search-container {
+            position: relative;
+            flex-grow: 1;
+            margin: 0 10px;
+            max-width: 400px; 
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 25px;
+            background-color: #333;
+            color: var(--text-color);
+            outline: none;
+            transition: background-color 0.2s, box-shadow 0.2s;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4);
+        }
+
+        .search-input:focus {
+             background-color: #444;
+             box-shadow: 0 0 0 2px var(--secondary-color);
+        }
+        
+        .search-suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            box-shadow: var(--shadow-dark);
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 500;
+            margin-top: 5px;
+            display: none;
+        }
+        
+        .suggestion-item {
+            padding: 12px 15px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            border-bottom: 1px solid #333;
+            font-size: 14px;
+        }
+        
+        .suggestion-item:hover {
+            background-color: #333;
+            color: var(--secondary-color);
+        }
+
+        .home-button {
+            width: 40px;
+            height: 40px;
+            border: none;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            color: var(--text-color);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.3s ease, transform 0.2s;
+            box-shadow: var(--shadow-subtle);
+            margin-left: 15px; 
+            flex-shrink: 0;
+        }
+
+        .home-button:hover {
+            background-color: #ff3333; 
+            transform: scale(1.05);
+        }
+        
+        .home-button svg {
+            width: 24px;
+            height: 24px;
+            fill: currentColor;
+        }
+
+        /* --- Video Player Container (Identical) --- */
+        .video-player-wrapper {
+            width: 100%;
+            padding-bottom: 56.25%; 
+            position: relative;
+            background-color: #000;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+            margin-top: 1px; 
+        }
+        
+        .video-player-wrapper iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+            z-index: 10;
+        }
+
+        /* --- Loading Spinner (Identical) --- */
+        .loader {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 20;
+            flex-direction: column;
+        }
+
+        .spinner {
+            border: 4px solid var(--card-bg);
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* --- Details & Description UPDATES --- */
+        .content-details {
+            padding: 20px;
+        }
+
+        /* Title Styling */
+        .content-details h1 {
+            color: var(--text-color);
+            font-size: 1.5em; 
+            font-weight: 500; 
+            margin: 0;
+            padding-left: 0;
+            line-height: 1.3;
+            text-align: left;
+            margin-bottom: 10px; /* Space before the action bar */
+        }
+        
+        /* UPDATED: Main Action Bar to hold all buttons on one line */
+        .video-info-bar {
+            display: flex;
+            /* Changed to flex-start to align elements to the left, matching the image */
+            justify-content: flex-start; 
+            align-items: center;
+            margin-bottom: 15px;
+            padding-right: 5px; 
+            /* Added a negative margin to counteract the content-details padding on small screens */
+            margin-left: -5px; 
+            margin-right: -5px;
+        }
+
+        /* UPDATED: Action Buttons Container to handle horizontal layout */
+        .action-buttons {
+            display: flex;
+            gap: 15px; /* Space between buttons */
+            /* Ensure buttons don't wrap unless necessary */
+            flex-wrap: nowrap; 
+        }
+        
+        /* Description Toggle Button - Styled like an action button */
+        #descriptionToggle {
+            background: rgba(255, 255, 255, 0.1); 
+            border: none;
+            color: var(--text-color);
+            cursor: pointer;
+            padding: 8px 12px; 
+            border-radius: 20px; 
+            transition: background-color 0.2s, transform 0.1s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 500;
+            font-size: 0.9em;
+            gap: 5px;
+            flex-shrink: 0;
+        }
+        
+        #descriptionToggle:hover {
+             background-color: rgba(255, 255, 255, 0.2);
+        }
+        #descriptionToggle:active {
+            transform: scale(0.98);
+        }
+
+        .description-arrow-svg {
+            width: 20px; 
+            height: 20px;
+            fill: currentColor;
+            transition: transform 0.3s;
+        }
+        
+        /* Description Toggle Icon Rotation */
+        #descriptionToggle.active .description-arrow-svg {
+            transform: rotate(180deg); 
+        }
+        
+        /* Share & Download Button (General Action Button) - Consistent styling */
+        .action-button {
+            background: rgba(255, 255, 255, 0.1); 
+            border: none;
+            color: var(--text-color);
+            cursor: pointer;
+            padding: 8px 12px; 
+            border-radius: 20px; 
+            transition: background-color 0.2s, transform 0.1s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 500;
+            font-size: 0.9em;
+            gap: 5px;
+            flex-shrink: 0;
+        }
+
+        .action-button:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Animation on click */
+        .action-button:active {
+            transform: scale(0.98);
+        }
+        
+        .action-button svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+            transition: transform 0.3s;
+        }
+
+        /* Download Button specific styling */
+        #downloadButton {
+            /* Highlight the download button */
+            background-color: var(--primary-color); 
+        }
+
+        #downloadButton:hover {
+            background-color: #ff3333; 
+        }
+        
+        /* Description Display Styling */
+        #videoDescriptionDisplay {
+            color: var(--text-muted);
+            line-height: 1.5;
+            font-size: 0.9em; 
+            white-space: pre-wrap;
+            padding: 10px;
+            background-color: #222; 
+            border-radius: 8px;
+            transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+            max-height: 0; 
+            opacity: 0;
+            overflow: hidden;
+        }
+        
+        /* Styling for clickable links in description */
+        #videoDescriptionDisplay a {
+            color: var(--link-color);
+            text-decoration: underline;
+        }
+
+        /* Styling for SEO-friendly hashtags */
+        #videoDescriptionDisplay .hashtag {
+            color: var(--secondary-color);
+            font-weight: bold;
+            text-decoration: none;
+            cursor: default; 
+        }
+        
+        #videoDescriptionDisplay.expanded {
+            max-height: 500px; 
+            opacity: 1;
+            margin-top: 15px;
+        }
+        
+        /* Link Copy Animation */
+        #copyFeedback {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.5); /* Start smaller */
+            background-color: var(--primary-color); /* Red background */
+            color: var(--text-color);
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            z-index: 10000;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out, transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55); /* Bounce effect transition */
+            pointer-events: none;
+            box-shadow: var(--shadow-dark);
+        }
+        
+        #copyFeedback.show {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1); /* Bounce to full size */
+        }
+        
+        /* --- Related Videos Section --- */
+        .related-videos-section {
+            padding: 0 20px;
+            margin-top: 40px;
+            /* IMPORTANT: Ensure this section is displayed if there are related videos */
+        }
+        
+        .related-videos-section h2 {
+            font-size: 1.6em;
+            margin-bottom: 20px;
+            color: var(--text-color);
+            border-left: 4px solid var(--secondary-color);
+            padding-left: 10px;
+        }
+
+        .related-video-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 20px;
+        }
+
+        .related-card {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: var(--shadow-subtle);
+            transition: transform 0.3s ease, opacity 0.3s;
+            cursor: pointer;
+        }
+        
+        .related-card:hover {
+            transform: translateY(-5px);
+            opacity: 0.9;
+        }
+
+        .related-card-thumbnail-container {
+            width: 100%;
+            padding-top: 56.25%;
+            position: relative;
+        }
+
+        .related-card-thumbnail {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .related-card-title {
+            padding: 8px 10px; 
+            font-size: 0.85em; 
+            font-weight: 600;
+            color: var(--text-color);
+            margin: 0;
+            height: 2.5em; 
+            line-height: 1.25em; 
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+        
+        /* Responsive Adjustments */
+        @media (max-width: 600px) {
+            .header-bar {
+                padding: 10px 15px;
+            }
+            .search-container {
+                display: none; 
+            }
+            .content-details {
+                padding: 20px 15px; /* Adjusted padding */
+            }
+            .video-info-bar {
+                /* Reset margins for mobile view */
+                margin-left: 0; 
+                margin-right: 0;
+                /* Ensure space between title and buttons */
+                margin-bottom: 15px;
+            }
+            .content-details h1 {
+                font-size: 1.3em; 
+            }
+            .action-buttons {
+                flex-wrap: wrap; 
+                justify-content: flex-start;
+                gap: 10px; /* Reduced gap for small screens */
+            }
+        }
+        
+        @media (min-width: 1024px) {
+            .video-player-wrapper {
+                margin: 0 20px;
+            }
+            .content-details {
+                padding: 20px 20px 40px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header-bar">
+        <div class="logo">
+                <img src="https://i.ibb.co.com/8gBMgNfN/IMG-20251014-101622.png" alt="OnFlix Logo" style="height: 30px;">
+            </a>
+        </div>
+        
+        <div class="search-container">
+            <input type="text" id="searchInput" class="search-input" placeholder="Search video or movie name...">
+            <div id="searchResults" class="search-suggestions">
+                </div>
+        </div>
+
+        <button class="home-button" title="Go to Home" onclick="window.location.href='index.html';">
+            <svg viewBox="0 0 24 24">
+                <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+            </svg>
+        </button>
+    </div>
+
+    <div class="main-content">
+        <div class="video-player-wrapper">
+            <div id="videoLoader" class="loader">
+                <div class="spinner"></div>
+                <p style="color: var(--text-muted); margin-top: 15px;">Video is loading, please wait...</p>
+            </div>
+            <iframe id="videoFrame" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen style="display:none;"></iframe>
+        </div>
+        
+        <div class="content-details">
+            <h1 id="videoTitleDisplay">Video Loading...</h1>
+            
+            <div class="video-info-bar">
+                <p id="errorMessage" style="color:var(--primary-color); display:none; font-weight:bold; margin:0;"></p>
+                
+                <div class="action-buttons">
+                    <button id="descriptionToggle" title="Toggle Description">
+                        <svg class="description-arrow-svg" viewBox="0 0 24 24">
+                            <path d="M7 10l5 5 5-5z"/>
+                        </svg>
+                        <span>Description</span>
+                    </button>
+                    
+                    <button id="downloadButton" class="action-button" title="Download">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2z"/>
+                        </svg>
+                        <span>Download</span>
+                    </button>
+
+                    <button id="shareButton" class="action-button" title="Share">
+                        <svg viewBox="0 0 16 16" fill="currentColor">
+                            <path d="M13.5 1a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3M11 2.5a2.5 2.5 0 1 1 .603 1.628l-6.718 3.12a2.5 2.5 0 0 1 0 1.504l6.718 3.12a2.5 2.5 0 1 1-.488.876l-6.718-3.12a2.5 2.5 0 1 1 0-3.256l6.718-3.12A2.5 2.5 0 0 1 11 2.5m-8.5 4a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3m11 5.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3"/>
+                        </svg>
+                        <span>Share</span>
+                    </button>
+                </div>
+            </div>
+            
+            <div id="videoDescriptionDisplay">No description available.</div>
+        </div>
+
+        <div class="related-videos-section" style="display:none;" id="relatedVideosSection">
+            <h2>Related Videos</h2>
+            <div class="related-video-grid" id="relatedVideoGrid">
+                </div>
+        </div>
+    </div>
+    
+    <div id="copyFeedback">Link Copied!</div>
+
+    <script>
+        // --- Firebase Configuration (Identical) ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyBakmRixYRaHzuaR-pAUHkOJUlDG9qflJA",
+            authDomain: "ad420-1780f.firebaseapp.com",
+            databaseURL: "https://ad420-1780f-default-rtdb.firebaseio.com",
+            projectId: "ad420-1780f",
+            storageBucket: "ad420-1780f.firebasestorage.app",
+            messagingSenderId: "479314410995",
+            appId: "1:479314410995:web:6f7a99e1be874d69fd2686"
+        };
+        const app = firebase.initializeApp(firebaseConfig);
+        const database = app.database();
+        const videosRef = database.ref('videos');
+        
+        // --- DOM Elements ---
+        const videoFrame = document.getElementById('videoFrame');
+        const videoTitleDisplay = document.getElementById('videoTitleDisplay');
+        const videoDescriptionDisplay = document.getElementById('videoDescriptionDisplay');
+        const errorMessage = document.getElementById('errorMessage');
+        const pageTitle = document.getElementById('pageTitle');
+        const videoLoader = document.getElementById('videoLoader');
+        const relatedVideosSection = document.getElementById('relatedVideosSection');
+        const relatedVideoGrid = document.getElementById('relatedVideoGrid');
+        
+        // --- Action Elements ---
+        const descriptionToggle = document.getElementById('descriptionToggle');
+        const shareButton = document.getElementById('shareButton');
+        const downloadButton = document.getElementById('downloadButton'); 
+        const copyFeedback = document.getElementById('copyFeedback');
+        
+        // --- Search Elements ---
+        const searchInput = document.getElementById('searchInput');
+        const searchResultsContainer = document.getElementById('searchResults');
+        let allVideos = []; 
+
+        // --- Utility Functions ---
+        function getQueryParam(param) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(param);
+        }
+
+        function createRelatedVideoCard(video) {
+            // Note: The category parameter in the URL is kept for backward compatibility, 
+            // but the related video filtering now uses subCategory.
+            const card = document.createElement('a');
+            card.href = `player.html?key=${video.key}&category=${video.category}`; 
+            card.className = 'related-card';
+            
+            card.innerHTML = `
+                <div class="related-card-thumbnail-container">
+                    <img src="${video.thumbnailURL}" alt="${video.title}" class="related-card-thumbnail" onerror="this.onerror=null;this.src='https://via.placeholder.com/160x90.png?text=Thumbnail';">
+                </div>
+                <h3 class="related-card-title">${video.title}</h3>
+            `;
+            return card;
+        }
+
+        // --- UPDATED: Function to process description for links and hashtags ---
+        function formatDescription(text) {
+            // 1. Replace URLs with clickable <a> tags
+            let formattedText = text.replace(
+                /(https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|www\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|https?:\/\/[^\s]+|www\.[^\s]+)/gi,
+                (match) => {
+                    let url = match;
+                    if (!url.match(/^https?:\/\//i)) {
+                        url = 'http://' + url;
+                    }
+                    return `<a href="${url}" target="_blank" rel="noopener noreferrer">${match}</a>`;
+                }
+            );
+
+            // 2. FIXED: Replace #hashtags (including letters, digits, and underscores) with SEO-friendly spans
+            // \w includes [a-zA-Z0-9_]
+            // \u0980-\u09FF includes Bengali characters
+            formattedText = formattedText.replace(/#([\w\u0980-\u09FF]+)/g, '<span class="hashtag">#$1</span>');
+            
+            return formattedText;
+        }
+
+        // --- Description Toggle Logic ---
+        function toggleDescription() {
+            videoDescriptionDisplay.classList.toggle('expanded');
+            descriptionToggle.classList.toggle('active');
+        }
+
+        descriptionToggle.addEventListener('click', toggleDescription);
+        
+        // --- Share & Link Copy Logic (Identical) ---
+        async function copyVideoLink() {
+            const videoKey = getQueryParam('key');
+            if (!videoKey) return;
+            const videoLink = `${window.location.origin}${window.location.pathname}?key=${videoKey}`;
+            try {
+                if (navigator.share) {
+                    await navigator.share({
+                        title: document.title,
+                        url: videoLink,
+                    });
+                } else {
+                    await navigator.clipboard.writeText(videoLink);
+                    copyFeedback.textContent = 'Link Copied!';
+                    copyFeedback.classList.add('show');
+                    setTimeout(() => {
+                        copyFeedback.classList.remove('show');
+                    }, 2000); 
+                }
+
+            } catch (err) {
+                console.error('Failed to share or copy text: ', err);
+                copyFeedback.textContent = 'Failed to Copy!';
+                copyFeedback.classList.add('show');
+                setTimeout(() => {
+                    copyFeedback.classList.remove('show');
+                }, 2000);
+            }
+        }
+
+        shareButton.addEventListener('click', copyVideoLink);
+
+        // --- Download Button Logic ---
+        function handleDownload(downloadUrl) {
+            if (downloadUrl && downloadUrl.startsWith('http')) {
+                const link = document.createElement('a');
+                link.href = downloadUrl;
+                link.target = '_blank';
+                link.rel = 'noopener noreferrer';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } else {
+                alert('Sorry, no download link is available for this video.');
+            }
+        }
+        
+        downloadButton.onclick = null; // Reset click handler
+
+        // **-- UPDATED LOGIC FOR RELATED VIDEOS (REMOVED LIMIT) --**
+        function loadRelatedVideos(currentKey, currentSubCategory) {
+             const relatedVideos = allVideos.filter(video =>
+                // Filter: same subCategory, different key
+                video.subCategory && video.subCategory === currentSubCategory && video.key !== currentKey
+             );
+            
+            // Show ALL videos and sort by newest first (assuming timestamp exists)
+            if (relatedVideos.length > 0) {
+                relatedVideoGrid.innerHTML = '';
+                // Sort by timestamp for "serial order" (newest first)
+                // **IMPORTANT CHANGE: .slice(0, 10) REMOVED**
+                relatedVideos.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0)).forEach(video => {
+                    relatedVideoGrid.appendChild(createRelatedVideoCard(video));
+                });
+                // Show the section only if there are videos
+                relatedVideosSection.style.display = 'block';
+            } else {
+                 relatedVideosSection.style.display = 'none';
+            }
+        }
+
+
+        // --- Core Video Load Logic (Updated to use subCategory) ---
+        const videoKey = getQueryParam('key');
+        const categoryParam = getQueryParam('category');
+
+        if (videoKey) {
+            videoLoader.style.display = 'flex';
+            
+            // 1. Fetch all videos first
+            videosRef.once('value', (snapshot) => {
+                const data = snapshot.val();
+                const videosArray = [];
+                
+                for (let key in data) {
+                    if (data.hasOwnProperty(key)) {
+                        // Include key in the video object for later use in related videos
+                        videosArray.push({
+                            key: key,
+                            ...data[key]
+                        });
+                    }
+                }
+                
+                allVideos = videosArray; // Populate global array
+
+                const videoData = data[videoKey];
+
+                if (videoData && videoData.embedLink) {
+                    const title = videoData.title || 'No Title';
+                    const category = videoData.category || categoryParam || 'Unknown';
+                    // **-- EXTRACT subCategory --**
+                    const subCategory = videoData.subCategory || 'Unknown'; 
+                    const downloadLink = videoData.downloadLink;
+
+                    videoTitleDisplay.textContent = title;
+                    
+                    const descriptionText = videoData.description || 'No description available.';
+                    
+                    // Format description for links/hashtags and render
+                    videoDescriptionDisplay.innerHTML = formatDescription(descriptionText);
+                    
+                    pageTitle.textContent = title + ' | OnFlix';
+                    
+                    let embedUrl = videoData.embedLink;
+                    const youtubeMatch = embedUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=))([\w-]{11})/i);
+                    
+                    if (youtubeMatch) {
+                        embedUrl = `https://www.youtube.com/embed/${youtubeMatch[1]}?autoplay=1&rel=0&controls=1`;
+                    }
+                    
+                    videoFrame.onload = function() {
+                        videoLoader.style.display = 'none';
+                        videoFrame.style.display = 'block';
+                    };
+
+                    videoFrame.src = embedUrl;
+
+                    // Setup download button functionality based on link presence
+                    if (downloadLink && downloadLink.startsWith('http')) {
+                         downloadButton.onclick = () => handleDownload(downloadLink);
+                         downloadButton.style.opacity = '1'; 
+                    } else {
+                         downloadButton.onclick = () => alert('Sorry, no download link is available for this video.');
+                         downloadButton.style.opacity = '0.5'; // Visually indicate non-functional
+                    }
+
+                    // 2. Load Related Videos using subCategory
+                    loadRelatedVideos(videoKey, subCategory); // **-- PASSING subCategory HERE --**
+
+                } else {
+                    // Load Failure
+                    videoLoader.style.display = 'none';
+                    videoTitleDisplay.textContent = 'Video Load Failed';
+                    videoDescriptionDisplay.innerHTML = '';
+                    errorMessage.textContent = 'No data or embed link found for this video.';
+                    errorMessage.style.display = 'block';
+                    pageTitle.textContent = 'Error';
+                }
+            }).catch(error => {
+                 // Database Error
+                 videoLoader.style.display = 'none';
+                 videoTitleDisplay.textContent = 'Database Error';
+                 videoDescriptionDisplay.innerHTML = '';
+                 errorMessage.textContent = `Problem loading data: ${error.message}`;
+                 errorMessage.style.display = 'block';
+                 pageTitle.textContent = 'Error';
+            });
+        } else {
+            // Missing Key Error
+            videoLoader.style.display = 'none';
+            videoTitleDisplay.textContent = 'Invalid Link';
+            videoDescriptionDisplay.innerHTML = '';
+            errorMessage.textContent = 'The link is incorrect. Please use a link with a valid video ID.';
+            errorMessage.style.display = 'block';
+            pageTitle.textContent = 'Error';
+        }
+    </script>
+</body>
+</html>
