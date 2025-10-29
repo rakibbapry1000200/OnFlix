@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>OnFlix - Search</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+    <style>
+        /* Base and Utility Styles - Dark Theme */
+        :root {
+            --primary-color: #e50914; /* Netflix Red */
+            --secondary-color: #00bcd4;
+            --bg-color: #121212; /* Dark Background */
+            --card-bg: #1e1e1e; /* Darker Card/Header */
+            --text-color: #ffffff;
+            --text-muted: #b0b0b0;
+            --shadow-light: 0 4px 12px rgba(0, 0, 0, 0.5);
+            --shadow-dark: 0 8px 25px rgba(0, 0, 0, 0.8);
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden !important; 
+            min-width: 100vw;
+            touch-action: pan-y;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        a {
+            text-decoration: none;
+            color: var(--text-color);
+        }
+
+        /* Header Styles */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            background-color: var(--card-bg);
+            box-shadow: var(--shadow-dark);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            width: 100%;
+            max-width: 100vw;
+        }
+
+        /* Back Button Style */
+        .back-button {
+            display: block; 
+            cursor: pointer;
+            padding: 5px;
+            margin-right: 10px;
+            transition: opacity 0.2s;
+            flex-shrink: 0; 
+        }
+        .back-button svg {
+            fill: var(--text-color);
+            width: 24px;
+            height: 24px;
+        }
+        .back-button:hover {
+            opacity: 0.8;
+        }
+        
+        /* Search Styles */
+        .search-container {
+            position: relative;
+            flex-grow: 1;
+            margin: 0; 
+            display: flex;
+            align-items: center;
+            min-width: 0;
+        }
+
+        .search-wrapper {
+            position: relative;
+            flex-grow: 1;
+            margin: 0 10px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 10px 40px 10px 15px;
+            border: none;
+            border-radius: 25px;
+            background-color: #333;
+            color: var(--text-color);
+            outline: none;
+            transition: background-color 0.2s, box-shadow 0.2s;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4);
+        }
+
+        .search-input:focus {
+             background-color: #444;
+             box-shadow: 0 0 0 2px var(--secondary-color);
+        }
+
+        /* Search Clear Button Style */
+        .search-clear {
+            position: absolute;
+            right: 20px; 
+            top: 50%;
+            transform: translateY(-50%);
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            color: var(--text-muted);
+            opacity: 0.8;
+            transition: opacity 0.2s;
+            display: none;
+            padding: 2px;
+            flex-shrink: 0;
+        }
+        .search-clear svg {
+            fill: currentColor;
+            width: 100%;
+            height: 100%;
+        }
+        
+        /* 🔥🔥🔥 সার্চ সাজেশন স্টাইল (ফুল স্ক্রিন) 🔥🔥🔥 */
+        .search-suggestions {
+            /* **ফুল স্ক্রিন পজিশনিং** */
+            position: fixed; 
+            top: 50px; 
+            left: 0;
+            right: 0;
+            
+            background-color: var(--bg-color); 
+            box-shadow: var(--shadow-dark);
+            max-height: 80vh; 
+            overflow-y: auto;
+            z-index: 999; 
+            display: none;
+        }
+
+        .header {
+             z-index: 1000;
+             background-color: var(--bg-color); 
+        }
+
+
+        .suggestion-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 15px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            font-size: 16px; 
+            font-weight: 400; 
+            color: var(--text-color);
+        }
+        
+        .suggestion-item:hover, .suggestion-item.highlighted {
+            background-color: #333;
+        }
+
+        .suggestion-item svg {
+            fill: var(--text-muted); 
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+        }
+
+        /* Search icon for all suggestions (YouTube style) */
+        .suggestion-item .search-icon {
+            margin-right: 15px; 
+            margin-left: 0;
+            fill: var(--text-muted);
+        }
+
+        /* Arrow icon for "fill up" action (YouTube style) */
+        .suggestion-item .fill-arrow {
+            margin-left: 10px;
+            margin-right: 0;
+        }
+        /* 🔥🔥🔥 শেষ সার্চ সাজেশন স্টাইল 🔥🔥🔥 */
+
+
+        /* Video Section Styles */
+        .content-section {
+            padding: 0 0 80px 0;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .content-section h2 {
+            display: none; 
+        }
+        
+        .search-result-list {
+             display: flex;
+             flex-direction: column;
+             gap: 10px; 
+             padding: 10px 0 20px 0; 
+        }
+
+        .search-list-item {
+            display: flex;
+            align-items: flex-start; 
+            cursor: pointer;
+            transition: background-color 0.2s;
+            width: 100%;
+            padding: 5px 15px; 
+        }
+        .search-list-item:hover {
+             background-color: #2a2a2a;
+        }
+
+        .search-list-item .video-thumbnail-container {
+            min-width: 130px; 
+            max-width: 130px;
+            height: 75px; 
+            position: relative;
+            flex-shrink: 0;
+            overflow: hidden; 
+            border-radius: 0; 
+            margin-right: 10px;
+        }
+        .search-list-item .video-thumbnail {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: cover; 
+            border-radius: 0; 
+        }
+        .red-overlay-banner {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            padding: 2px 5px;
+            background-color: var(--primary-color);
+            color: var(--text-color);
+            font-size: 0.7em;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .search-list-item .video-info {
+            padding: 0;
+            height: auto;
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+        }
+
+        .search-list-item .video-title {
+            font-size: 1em;
+            font-weight: 500; 
+            margin: 0 0 3px 0;
+            line-height: 1.4em;
+            max-height: 2.8em; 
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            width: 100%;
+        }
+
+        .video-channel {
+            font-size: 0.85em;
+            color: var(--text-muted); 
+            margin-bottom: 2px;
+        }
+
+        /* Footer Styles (Same as before) */
+        .footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-around;
+            background-color: var(--card-bg);
+            box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            padding: 8px 0;
+            border-top: 1px solid #333;
+        }
+
+        .footer-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 5px;
+            color: var(--text-muted);
+            transition: color 0.3s, transform 0.2s;
+        }
+
+        .footer-item:active {
+            transform: scale(0.9);
+        }
+
+        .footer-item svg {
+            width: 24px;
+            height: 24px;
+            margin-bottom: 2px;
+            fill: currentColor;
+        }
+
+        .footer-item span {
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        /* Responsive Adjustments */
+        @media (min-width: 600px) {
+            .search-list-item .video-thumbnail-container {
+                min-width: 200px;
+                max-width: 200px;
+                height: 112px; 
+            }
+        }
+        
+        @media (min-width: 1024px) {
+            .content-section {
+                max-width: 1300px;
+                margin: 0 auto;
+                padding: 0 0 20px 0;
+            }
+            .search-result-list {
+                 padding: 10px 30px 20px 30px;
+            }
+            .header {
+                position: static;
+                padding: 15px 30px;
+            }
+            .search-suggestions {
+                 position: absolute; 
+                 top: 100%;
+                 left: 0;
+                 right: 0;
+                 max-width: 1300px;
+                 margin: 0 auto;
+                 padding-top: 5px;
+            }
+            .footer {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="back-button" onclick="window.history.back();">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+        </div>
+        <div class="logo" style="display: none;">
+            </div>
+        <div class="search-container">
+            <div class="search-wrapper">
+                <input type="text" id="searchInput" class="search-input" placeholder="Search OnFlix" oninput="handleSearchInput()" onkeydown="handleSearchKeyDown(event)">
+                <div class="search-clear" id="searchClearButton" onclick="clearSearchInput()">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+    
+    <div id="searchResults" class="search-suggestions">
+            </div>
+
+
+    <div class="content-section" id="searchSection">
+        <h2 style="display:none;">Search Results</h2> 
+        <div id="searchGrid" class="search-result-list">
+            <p style="text-align:center; color:var(--text-muted); padding: 10px 15px; width: 100%;">অনুসন্ধানের জন্য কিছু লিখুন।</p>
+        </div>
+    </div>
+    
+ <div class="footer">
+      <a href="index.html" class="footer-item active">
+    <img src="https://i.ibb.co.com/B2szTPRX/20251029-183700.png" alt="Home" width="24" height="24">
+    <span>Home</span>
+</a>
+        <a href="movie.html" class="footer-item"> 
+    <img src="https://i.ibb.co.com/MrCgXKh/20251029-182825.png" alt="movie" width="24" height="24">
+    <span>Movie</span>
+</a>
+        </a>
+        <a href="drama.html" class="footer-item"> 
+    <img src="https://i.ibb.co.com/whxzxMBc/20251029-182244.png" alt="drama" width="24" height="24">
+    <span>Drama</span>
+</a>
+        <a href="anime.html" class="footer-item"> 
+    <img src="https://i.ibb.co.com/kVgbHLQ2/20251029-181815.png" alt="Anime" width="24" height="24">
+    <span>Anime</span>
+</a>
+        <a href="webseries.html" class="footer-item"> 
+    <img src="https://i.ibb.co.com/Wv4Hy26Y/20251029-185215.png" alt="webseries" width="24" height="24">
+    <span>Series</span>
+</a>
+    </div>
+
+    <script>
+        // --- Firebase Configuration & Setup (আপনার কোড থেকে নেওয়া) ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyBakmRixYRaHzuaR-pAUHkOJUlDG9qflJA",
+            authDomain: "ad420-1780f.firebaseapp.com",
+            databaseURL: "https://ad420-1780f-default-rtdb.firebaseio.com",
+            projectId: "ad420-1780f",
+            storageBucket: "ad420-1780f.firebasestorage.app",
+            messagingSenderId: "479314410995",
+            appId: "1:479314410995:web:6f7a99e1be874d69fd2686"
+        };
+        const app = firebase.initializeApp(firebaseConfig);
+        const database = app.database();
+        const videosRef = database.ref('videos');
+
+        // --- DOM Elements ---
+        const searchInput = document.getElementById('searchInput');
+        const searchResultsContainer = document.getElementById('searchResults');
+        const searchGrid = document.getElementById('searchGrid');
+        const searchClearButton = document.getElementById('searchClearButton');
+
+        // --- Global State ---
+        let allVideos = [];
+        
+        // --- Video Player Redirection Logic ---
+        function playVideo(videoKey) {
+            window.location.href = `player.html?key=${videoKey}`;
+        }
+        
+        // --- Utility Functions ---
+
+        /**
+         * Clears the search input and search results.
+         */
+        function clearSearchInput() {
+             searchInput.value = '';
+             searchClearButton.style.display = 'none';
+             searchResultsContainer.style.display = 'none';
+             searchGrid.innerHTML = `<p style="text-align:center; color:var(--text-muted); padding: 10px 15px; width: 100%;">অনুসন্ধানের জন্য কিছু লিখুন।</p>`;
+             const url = new URL(window.location);
+             url.searchParams.delete('q');
+             window.history.replaceState({}, '', url); // Clean the URL
+        }
+        
+        // --- Data Rendering (Search Result List - No views/time) ---
+        function createVideoCard(video) {
+            const card = document.createElement('div');
+            card.className = 'search-list-item';
+            card.onclick = () => playVideo(video.key);
+
+            const channelName = video.channelName || 'OnFlix Originals';
+            
+            // Revert to original thumbnail/title structure (without views/time)
+            const redBannerText = video.title.match(/(Season [0-9]+)\s*(\[\s*Episode\s*-\s*[0-9]+\s*\])/i);
+            const bannerHTML = redBannerText 
+                ? `<div class="red-overlay-banner">${redBannerText[1]} ${redBannerText[2]} | বাংলা</div>`
+                : '';
+
+            card.innerHTML = `
+                <div class="video-thumbnail-container">
+                    <img src="${video.thumbnailURL}" alt="${video.title}" class="video-thumbnail" onerror="this.onerror=null;this.src='https://via.placeholder.com/130x75.png?text=No+Image';">
+                    ${bannerHTML}
+                </div>
+                <div class="video-info">
+                    <h3 class="video-title">${video.title}</h3>
+                    <p class="video-channel">${channelName}</p>
+                </div>
+            `;
+            return card;
+        }
+
+        // --- Search Logic ---
+        
+        function renderSearchResults(videos, query) {
+            searchGrid.innerHTML = ''; 
+            
+            if (videos.length === 0) {
+                searchGrid.innerHTML = `<p style="text-align:center; color:var(--text-muted); padding: 10px 15px 0; width: 100%;">আপনার অনুসন্ধানের সাথে মিলিয়ে কোনো ভিডিও পাওয়া যায়নি: "${query}"</p>`;
+            } else {
+                 videos.forEach(video => {
+                    searchGrid.appendChild(createVideoCard(video));
+                });
+            }
+        }
+
+        function performSearch(query) {
+             const finalQuery = query.toLowerCase().trim();
+             
+             if (finalQuery.length < 1) {
+                 const url = new URL(window.location);
+                 url.searchParams.delete('q');
+                 window.history.replaceState({}, '', url);
+                 
+                 searchGrid.innerHTML = `<p style="text-align:center; color:var(--text-muted); padding: 10px 15px; width: 100%;">অনুসন্ধানের জন্য কিছু লিখুন।</p>`;
+                 return;
+             }
+
+             const url = new URL(window.location);
+             url.searchParams.set('q', query);
+             window.history.replaceState({}, '', url);
+
+             const filteredVideos = allVideos.filter(video =>
+                (video.title && video.title.toLowerCase().includes(finalQuery)) || 
+                (video.description && video.description.toLowerCase().includes(finalQuery)) ||
+                (video.category && video.category.toLowerCase().includes(finalQuery))
+            );
+            
+            renderSearchResults(filteredVideos, query);
+        }
+        
+        /**
+         * 🔥🔥🔥 আপডেট করা ফাংশন: সার্চ সাজেশন লজিক ফিক্স করা হলো 🔥🔥🔥
+         */
+        function handleSearchInput() {
+            const query = searchInput.value;
+            searchClearButton.style.display = query.length > 0 ? 'block' : 'none';
+            searchResultsContainer.innerHTML = '';
+            
+            if (query.length < 2) {
+                searchResultsContainer.style.display = 'none';
+                return;
+            }
+            
+            const finalQuery = query.toLowerCase().trim();
+
+            const suggestionSource = new Set();
+            
+            // ১. টাইটেলে কোয়েরি ম্যাচ করে এমন সব টাইটেল যোগ করুন
+            allVideos.forEach(video => {
+                const title = video.title || '';
+                if (title.toLowerCase().includes(finalQuery)) {
+                    // **সাজেশন হিসেবে পুরো টাইটেলটিই ব্যবহার করা হচ্ছে**
+                    suggestionSource.add(title);
+                }
+            });
+            
+            // ২. কমন টার্মস থেকে সাজেশন যোগ করুন (যদি কোয়েরি কমন টার্মসের সাথে আংশিক বা সম্পূর্ণ মেলে)
+            const commonTerms = ['movie', 'series', 'season', 'episode', 'bangla', 'full hd', 'hindi dub', 'action', 'horror', 'thriller', 'romantic', 'cid season 2']; 
+            commonTerms.forEach(term => {
+                if (term.includes(finalQuery)) {
+                    suggestionSource.add(term);
+                }
+            });
+
+
+            const uniqueSuggestions = Array.from(suggestionSource).slice(0, 8);
+
+
+            uniqueSuggestions.forEach(suggestionText => {
+                const item = document.createElement('div');
+                item.className = 'suggestion-item';
+                
+                const searchIcon = `<svg class="search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>`;
+                
+                const fillArrow = `<svg class="fill-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>`;
+
+                item.innerHTML = `
+                    ${searchIcon}
+                    <div class="suggestion-item-text">${suggestionText}</div>
+                    ${fillArrow}
+                `;
+                
+                // Clicking on the suggestion text performs the search
+                item.querySelector('.suggestion-item-text').onclick = (e) => {
+                    e.stopPropagation();
+                    searchInput.value = suggestionText;
+                    performSearch(suggestionText);
+                    searchResultsContainer.style.display = 'none';
+                };
+                
+                // Clicking on the arrow fills the input box
+                item.querySelector('.fill-arrow').onclick = (e) => {
+                     e.stopPropagation();
+                     searchInput.value = suggestionText;
+                     searchInput.focus();
+                };
+
+                searchResultsContainer.appendChild(item);
+            });
+
+            searchResultsContainer.style.display = uniqueSuggestions.length > 0 ? 'block' : 'none';
+        }
+        
+        /**
+         * 'Enter' চাপলে সার্চ করে
+         */
+        function handleSearchKeyDown(event) {
+             if (event.key === 'Enter') {
+                 event.preventDefault(); 
+                 searchResultsContainer.style.display = 'none'; 
+                 performSearch(searchInput.value);
+                 searchInput.blur();
+             }
+        }
+
+        // সাজেশন কন্টেইনারের বাইরে ক্লিক করলে সাজেশন লুকানো
+        document.addEventListener('click', (event) => {
+            if (!event.target.closest('.header') && !event.target.closest('#searchResults')) {
+                searchResultsContainer.style.display = 'none';
+            }
+        });
+        
+        // --- Data Listener & Initial Load ---
+
+        videosRef.on('value', (snapshot) => {
+            const data = snapshot.val();
+            const videosArray = [];
+
+            for (let key in data) {
+                if (data.hasOwnProperty(key)) {
+                    const videoData = data[key];
+                    videosArray.push({
+                        key: key,
+                        ...videoData,
+                        channelName: videoData.channelName || 'OnFlix Originals',
+                    });
+                }
+            }
+
+            allVideos = videosArray.reverse();
+            
+            const urlParams = new URLSearchParams(window.location.search);
+            const initialQuery = urlParams.get('q');
+            if (initialQuery) {
+                searchInput.value = initialQuery;
+                searchClearButton.style.display = 'block';
+                performSearch(initialQuery);
+            }
+
+        }, (error) => {
+            console.error("Firebase video read failed:", error);
+            searchGrid.innerHTML = `<p style="text-align:center; color:var(--primary-color); padding: 30px;">ভিডিও ডাটা লোড করতে সমস্যা হয়েছে। ফায়ারবেস সংযোগ পরীক্ষা করুন।</p>`;
+        });
+        
+        // Initial search to load any existing URL query on page load
+        document.addEventListener('DOMContentLoaded', () => {
+             const urlParams = new URLSearchParams(window.location.search);
+             const initialQuery = urlParams.get('q');
+             if (initialQuery) {
+                 searchInput.value = initialQuery;
+                 searchClearButton.style.display = 'block';
+                 performSearch(initialQuery);
+             }
+         });
+    </script>
+</body>
+</html>
